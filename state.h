@@ -1,10 +1,9 @@
 #pragma once
 
 #include "piece.h"
+#include "types.h"
 
 namespace state {
-    enum Player { White, Black };
-
     class Board {
         piece::Piece *state[8][8];
         Player turn;
