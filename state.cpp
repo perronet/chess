@@ -68,7 +68,6 @@ void Board::print() {
     for (int i = 0; i < 8; ++i) {
         for (int j = 0; j < 8; ++j) {
             cout << state[i][j]->get_symbol() << " ";
-            // cout << state[i][j]->get_pos().i << " " << state[i][j]->get_pos().j << " ";
         }
         cout << "\n";
     }

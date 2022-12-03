@@ -16,6 +16,7 @@ namespace piece {
             Piece();
             Piece(Player p, Position pos);
             virtual std::vector<Position> get_legal_moves() = 0;
+            virtual piecetype::Piece get_type() = 0;
             std::string get_symbol();
             Position get_pos();
             void set_pos(Position p);
@@ -26,6 +27,7 @@ namespace piece {
     class Empty: public Piece {
         public:
             Empty();
+            piecetype::Piece get_type();
             std::vector<Position> get_legal_moves();
     };
 
@@ -34,6 +36,7 @@ namespace piece {
 
         public:
             Pawn(Player p, Position pos);
+            piecetype::Piece get_type();
             std::vector<Position> get_legal_moves();
     };
 
@@ -42,24 +45,28 @@ namespace piece {
 
         public:
             Rook(Player p, Position pos);
+            piecetype::Piece get_type();
             std::vector<Position> get_legal_moves();
     };
 
     class Knight: public Piece {
         public:
             Knight(Player p, Position pos);
+            piecetype::Piece get_type();
             std::vector<Position> get_legal_moves();
     };
 
     class Bishop: public Piece {
         public:
             Bishop(Player p, Position pos);
+            piecetype::Piece get_type();
             std::vector<Position> get_legal_moves();
     };
 
     class Queen: public Piece {
         public:
             Queen(Player p, Position pos);
+            piecetype::Piece get_type();
             std::vector<Position> get_legal_moves();
     };
 
@@ -68,6 +75,7 @@ namespace piece {
 
         public:
             King(Player p, Position pos);
+            piecetype::Piece get_type();
             std::vector<Position> get_legal_moves();
     };
 }

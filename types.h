@@ -2,6 +2,10 @@
 
 enum Player { White, Black, None};
 
+namespace piecetype { // Avoid name clash with class
+    enum Piece {Pawn, Rook, Knight, Bishop, Queen, King, Empty};
+}
+
 class Position {
     public:
         int i;

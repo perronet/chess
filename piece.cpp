@@ -28,12 +28,16 @@ void Piece::set_pos(Position p) {
 }
 
 bool Piece::is_empty() {
-    return player == None;
+    return this->get_type() == piecetype::Empty;
 }
 
 Empty::Empty() {
     symbol = "-";
     this->player = None;
+}
+
+piecetype::Piece Empty::get_type() {
+    return piecetype::Empty;
 }
 
 vector<Position> Empty::get_legal_moves() {
@@ -49,6 +53,10 @@ Pawn::Pawn(Player p, Position pos) : Piece::Piece(p, pos) {
     }
 }
 
+piecetype::Piece Pawn::get_type() {
+    return piecetype::Pawn;
+}
+
 vector<Position> Pawn::get_legal_moves() {
     vector<Position> v;
     return v;
@@ -60,6 +68,10 @@ Rook::Rook(Player p, Position pos) : Piece::Piece(p, pos) {
     } else {
         symbol = "♖";
     }
+}
+
+piecetype::Piece Rook::get_type() {
+    return piecetype::Rook;
 }
 
 vector<Position> Rook::get_legal_moves() {
@@ -75,6 +87,10 @@ Knight::Knight(Player p, Position pos) : Piece::Piece(p, pos) {
     }
 }
 
+piecetype::Piece Knight::get_type() {
+    return piecetype::Knight;
+}
+
 vector<Position> Knight::get_legal_moves() {
     vector<Position> v;
     return v;
@@ -86,6 +102,10 @@ Bishop::Bishop(Player p, Position pos) : Piece::Piece(p, pos) {
     } else {
         symbol = "♗";
     }
+}
+
+piecetype::Piece Bishop::get_type() {
+    return piecetype::Bishop;
 }
 
 vector<Position> Bishop::get_legal_moves() {
@@ -101,6 +121,10 @@ Queen::Queen(Player p, Position pos) : Piece::Piece(p, pos) {
     }
 }
 
+piecetype::Piece Queen::get_type() {
+    return piecetype::Queen;
+}
+
 vector<Position> Queen::get_legal_moves() {
     vector<Position> v;
     return v;
@@ -112,6 +136,10 @@ King::King(Player p, Position pos) : Piece::Piece(p, pos) {
     } else {
         symbol = "♔";
     }
+}
+
+piecetype::Piece King::get_type() {
+    return piecetype::King;
 }
 
 vector<Position> King::get_legal_moves() {
