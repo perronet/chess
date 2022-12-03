@@ -9,51 +9,65 @@ namespace piece {
         protected:
             std::string symbol;
             Player player;
+            Position pos;
+            bool is_pinned = false;
 
         public:
-            virtual std::vector<int> get_legal_moves() = 0;
+            Piece();
+            Piece(Player p, Position pos);
+            virtual std::vector<Position> get_legal_moves() = 0;
             std::string get_symbol();
+            Position get_pos();
+            void set_pos(Position p);
+            Player get_player();
+            bool is_empty();
     };
 
     class Empty: public Piece {
         public:
             Empty();
-            std::vector<int> get_legal_moves();
+            std::vector<Position> get_legal_moves();
     };
 
     class Pawn: public Piece {
+        bool first_move = true;
+
         public:
-            Pawn(Player p);
-            std::vector<int> get_legal_moves();
+            Pawn(Player p, Position pos);
+            std::vector<Position> get_legal_moves();
     };
 
     class Rook: public Piece {
+        bool first_move = true;
+
         public:
-            Rook(Player p);
-            std::vector<int> get_legal_moves();
+            Rook(Player p, Position pos);
+            std::vector<Position> get_legal_moves();
     };
 
     class Knight: public Piece {
         public:
-            Knight(Player p);
-            std::vector<int> get_legal_moves();
+            Knight(Player p, Position pos);
+            std::vector<Position> get_legal_moves();
     };
 
     class Bishop: public Piece {
         public:
-            Bishop(Player p);
-            std::vector<int> get_legal_moves();
+            Bishop(Player p, Position pos);
+            std::vector<Position> get_legal_moves();
     };
 
     class Queen: public Piece {
         public:
-            Queen(Player p);
-            std::vector<int> get_legal_moves();
+            Queen(Player p, Position pos);
+            std::vector<Position> get_legal_moves();
     };
 
     class King: public Piece {
+        bool first_move = true;
+
         public:
-            King(Player p);
-            std::vector<int> get_legal_moves();
+            King(Player p, Position pos);
+            std::vector<Position> get_legal_moves();
     };
 }
