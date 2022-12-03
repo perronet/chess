@@ -1,12 +1,15 @@
 #pragma once
 
-#include "piece.h"
-#include "types.h"
 #include <vector>
+#include "types.h"
+
+namespace piece {    
+    class Piece;
+}
 
 namespace state {
-    class Board {
-        piece::Piece *state[8][8];
+    class State {
+        piece::Piece *board[8][8];
         std::vector<piece::Piece> *pinned_pieces;
         std::vector<piece::Piece> *checking_pieces;
         // std::vector<piece::Piece> *white_pieces;
@@ -14,10 +17,11 @@ namespace state {
         Player turn;
 
         public:
-            Board();
+            State();
             bool move(Position from, Position to);
             bool in_check();
             std::vector<piece::Piece> *get_checking_pieces();
             void print();
+            piece::Piece* (*get_board())[8];
     };
 }

@@ -1,5 +1,6 @@
-#include "piece.h"
 #include "types.h"
+#include "piece.h"
+#include "state.h"
 
 using namespace piece;
 using namespace std;
@@ -25,6 +26,7 @@ Position Piece::get_pos() {
 
 void Piece::set_pos(Position p) {
     pos = p;
+    first_move = false;
 }
 
 bool Piece::is_empty() {
@@ -40,7 +42,7 @@ piecetype::Piece Empty::get_type() {
     return piecetype::Empty;
 }
 
-vector<Position> Empty::get_legal_moves() {
+vector<Position> Empty::get_legal_moves(state::State *b) {
     vector<Position> v;
     return v;
 }
@@ -57,8 +59,34 @@ piecetype::Piece Pawn::get_type() {
     return piecetype::Pawn;
 }
 
-vector<Position> Pawn::get_legal_moves() {
+vector<Position> Pawn::get_legal_moves(state::State *s) {
     vector<Position> v;
+    int i = this->pos.i;
+    int j = this->pos.j;
+    Piece* (*board)[8] = s->get_board();
+
+    // TODO check pin here
+
+    if (this->player == White) {
+        // Move
+        if (board[i - 1][j]->is_empty())
+            v.push_back(Position{i - 1, j});
+        if (this->first_move && board[i - 2][j]->is_empty())
+            v.push_back(Position{i - 2, j});
+
+        // Capture
+
+    } else if (this->player == Black) {
+        // Move
+        if (board[i + 1][j]->is_empty())
+            v.push_back(Position{i + 1, j});
+        if (this->first_move && board[i + 2][j]->is_empty())
+            v.push_back(Position{i + 2, j});
+
+        // Capture
+
+    }
+
     return v;
 }
 
@@ -74,7 +102,7 @@ piecetype::Piece Rook::get_type() {
     return piecetype::Rook;
 }
 
-vector<Position> Rook::get_legal_moves() {
+vector<Position> Rook::get_legal_moves(state::State *b) {
     vector<Position> v;
     return v;
 }
@@ -91,7 +119,7 @@ piecetype::Piece Knight::get_type() {
     return piecetype::Knight;
 }
 
-vector<Position> Knight::get_legal_moves() {
+vector<Position> Knight::get_legal_moves(state::State *b) {
     vector<Position> v;
     return v;
 }
@@ -108,7 +136,7 @@ piecetype::Piece Bishop::get_type() {
     return piecetype::Bishop;
 }
 
-vector<Position> Bishop::get_legal_moves() {
+vector<Position> Bishop::get_legal_moves(state::State *b) {
     vector<Position> v;
     return v;
 }
@@ -125,7 +153,7 @@ piecetype::Piece Queen::get_type() {
     return piecetype::Queen;
 }
 
-vector<Position> Queen::get_legal_moves() {
+vector<Position> Queen::get_legal_moves(state::State *b) {
     vector<Position> v;
     return v;
 }
@@ -142,7 +170,7 @@ piecetype::Piece King::get_type() {
     return piecetype::King;
 }
 
-vector<Position> King::get_legal_moves() {
+vector<Position> King::get_legal_moves(state::State *b) {
     vector<Position> v;
     return v;
 }

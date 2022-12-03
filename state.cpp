@@ -1,24 +1,24 @@
 #include <iostream>
 #include <algorithm>
 #include <vector>
-#include "state.h"
-#include "piece.h"
 #include "types.h"
+#include "piece.h"
+#include "state.h"
 
 using namespace state;
 using namespace piece;
 using namespace std;
 
-Board::Board() {
+State::State() {
     this->turn = White;
     for (int i = 1; i < 7; ++i) {
         for (int j = 0; j < 8; ++j) {
             if (i == 1) {
-                state[i][j] = new Pawn(Black, Position {i, j});
+                board[i][j] = new Pawn(Black, Position {i, j});
             } else if (i == 6) {
-                state[i][j] = new Pawn(White, Position {i, j});
+                board[i][j] = new Pawn(White, Position {i, j});
             } else {
-                state[i][j] = new Empty();
+                board[i][j] = new Empty();
             }
         }
     }
@@ -29,46 +29,49 @@ Board::Board() {
     new Queen(White, Position {7, 3}), new King(White, Position {7, 4}), new Bishop(White, Position {7, 5}),
     new Knight(White, Position {7, 6}), new Rook(White, Position {7, 7})};
     for (int j = 0; j < 8; ++j) {
-        state[0][j] = start_black[j];
+        board[0][j] = start_black[j];
     }
     for (int j = 0; j < 8; ++j) {
-        state[7][j] = start_white[j];
+        board[7][j] = start_white[j];
     }
 }
 
-bool Board::move(Position from, Position to) {
-    if (state[from.i][from.j]->is_empty()
-        || state[to.i][to.j]->get_player() == this->turn) {
+bool State::move(Position from, Position to) {
+    if (board[from.i][from.j]->is_empty()
+        || board[to.i][to.j]->get_player() == this->turn) {
         return false;
     }
 
-    vector<Position> moves = state[from.i][from.j]->get_legal_moves();
+    vector<Position> moves = board[from.i][from.j]->get_legal_moves(this);
     for (auto m : moves) {
         if (m == to) {
-            // TODO check for pins
-            // TODO check for checks
-            state[to.i][to.j] = state[from.i][from.j];
-            state[from.i][from.j] = new Empty();
+            board[from.i][from.j]->set_pos(to);
+            board[to.i][to.j] = board[from.i][from.j];
+            board[from.i][from.j] = new Empty();
             return true;
         }
-            return true;
     }
     return false;
 }
 
-bool Board::in_check() {
+bool State::in_check() {
     return this->checking_pieces->empty();
 }
 
-vector<piece::Piece> *Board::get_checking_pieces() {
+vector<piece::Piece> *State::get_checking_pieces() {
     return this->checking_pieces;
 }
 
-void Board::print() {
+void State::print() {
     for (int i = 0; i < 8; ++i) {
         for (int j = 0; j < 8; ++j) {
-            cout << state[i][j]->get_symbol() << " ";
+            cout << board[i][j]->get_symbol() << " ";
         }
         cout << "\n";
     }
+    cout << "\n";
+}
+
+piece::Piece* (*State::get_board())[8] { 
+    return this->board; 
 }
