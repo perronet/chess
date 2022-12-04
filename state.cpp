@@ -38,8 +38,18 @@ State::State() {
     }
 }
 
+bool State::move(string move_notation) {
+    optional<pair<Position, Position>> result = this->move_parser.parse(move_notation, this);
+
+    if (!result.has_value())
+        return false;
+
+    return this->move(result.value().first, result.value().second);
+}
+
 bool State::move(Position from, Position to) {
     if (board[from.i][from.j]->is_empty()
+        || board[from.i][from.j]->get_player() != this->turn
         || board[to.i][to.j]->get_player() == this->turn) {
         return false;
     }
@@ -50,6 +60,12 @@ bool State::move(Position from, Position to) {
             board[from.i][from.j]->set_pos(to);
             board[to.i][to.j] = board[from.i][from.j];
             board[from.i][from.j] = new Empty();
+
+            if (this->turn == White)
+                this->turn = Black;
+            else
+                this->turn = White;
+            
             return true;
         }
     }
@@ -66,12 +82,17 @@ vector<piece::Piece*> State::get_checking_pieces() {
 
 void State::print() {
     for (int i = 0; i < 8; ++i) {
+        cout << this->move_parser.row_to_coord(i) << "  ";
         for (int j = 0; j < 8; ++j) {
             cout << board[i][j]->get_symbol() << " ";
         }
         cout << "\n";
     }
-    cout << "\n";
+    cout << "   ";
+    for (int j = 0; j < 8; ++j) {
+        cout << this->move_parser.col_to_coord(j) << " ";
+    }
+    cout << "\n\n";
 }
 
 piece::Piece* (*State::get_board())[8] { 
@@ -86,11 +107,15 @@ Material *State::get_pieces(Player p) {
         return &this->black_pieces;
 }
 
-Material *State::get_pieces() {
-    if (this->turn == White)
-        return &this->white_pieces;
+King *State::get_king(Player p) {
+    if (p == White)
+        return this->white_pieces.king;
     else
-        return &this->black_pieces;
+        return this->black_pieces.king;
+}
+
+Player State::get_turn() {
+    return this->turn;
 }
 
 #define CASE_PIECE(piececlass, piecevector) \

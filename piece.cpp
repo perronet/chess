@@ -35,6 +35,7 @@ bool Piece::is_empty() {
 
 Empty::Empty() {
     symbol = "-";
+    player = None;
 }
 
 piecetype::Piece Empty::get_type() {

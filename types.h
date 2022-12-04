@@ -1,6 +1,6 @@
 #pragma once
 
-enum Player {White, Black};
+enum Player {White, Black, None};
 
 namespace piecetype { // Avoid name clash with class
     enum Piece {Pawn, Rook, Knight, Bishop, Queen, King, Empty};

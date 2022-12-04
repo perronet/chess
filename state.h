@@ -3,6 +3,7 @@
 #include <vector>
 #include "types.h"
 #include "piece.h"
+#include "parse.h"
 
 namespace state {
     struct Material {
@@ -19,6 +20,7 @@ namespace state {
         piece::Piece *board[8][8];
         std::vector<piece::Piece*> pinned_pieces;
         std::vector<piece::Piece*> checking_pieces;
+        parse::MoveParser move_parser;
         Material white_pieces;
         Material black_pieces;
         Player turn;
@@ -26,12 +28,14 @@ namespace state {
         public:
             State();
             bool move(Position from, Position to);
+            bool move(std::string move_notation);
             bool in_check();
             std::vector<piece::Piece*> get_checking_pieces();
             void print();
             void add_piece(Player p, piecetype::Piece piece, Position pos);
             piece::Piece* (*get_board())[8];
             Material *get_pieces(Player p);
-            Material *get_pieces();
+            piece::King *get_king(Player p);
+            Player get_turn();
     };
 }
