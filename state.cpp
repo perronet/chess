@@ -11,28 +11,30 @@ using namespace std;
 
 State::State() {
     this->turn = White;
+    this->white_pieces.player = White;
+    this->black_pieces.player = Black;
     for (int i = 1; i < 7; ++i) {
         for (int j = 0; j < 8; ++j) {
             if (i == 1) {
-                board[i][j] = new Pawn(Black, Position {i, j});
+                this->add_piece(Black, piecetype::Pawn, Position {i, j});
             } else if (i == 6) {
-                board[i][j] = new Pawn(White, Position {i, j});
+                this->add_piece(White, piecetype::Pawn, Position {i, j});
             } else {
                 board[i][j] = new Empty();
             }
         }
     }
-    Piece *start_black[] = {new Rook(Black, Position {0, 0}), new Knight(Black, Position {0, 1}), new Bishop(Black, Position {0, 2}), 
-    new Queen(Black, Position {0, 3}), new King(Black, Position {0, 4}), new Bishop(Black, Position {0, 5}),
-    new Knight(Black, Position {0, 6}), new Rook(Black, Position {0, 7})};
-    Piece *start_white[] = {new Rook(White, Position {7, 0}), new Knight(White, Position {7, 1}), new Bishop(White, Position {7, 2}), 
-    new Queen(White, Position {7, 3}), new King(White, Position {7, 4}), new Bishop(White, Position {7, 5}),
-    new Knight(White, Position {7, 6}), new Rook(White, Position {7, 7})};
-    for (int j = 0; j < 8; ++j) {
-        board[0][j] = start_black[j];
-    }
-    for (int j = 0; j < 8; ++j) {
-        board[7][j] = start_white[j];
+    
+    piecetype::Piece order[] = {piecetype::Rook, piecetype::Knight, piecetype::Bishop, piecetype::Queen, piecetype::King,
+                                piecetype::Bishop, piecetype::Knight, piecetype::Rook};
+    for (Player player : {White, Black}) {
+        int row;
+        if (player == Black)
+            row = 0;
+        if (player == White)
+            row = 7;
+        for (int j = 0; j < 8; ++j)
+            this->add_piece(player, order[j], Position {row, j});
     }
 }
 
@@ -55,10 +57,10 @@ bool State::move(Position from, Position to) {
 }
 
 bool State::in_check() {
-    return this->checking_pieces->empty();
+    return this->checking_pieces.empty();
 }
 
-vector<piece::Piece> *State::get_checking_pieces() {
+vector<piece::Piece*> State::get_checking_pieces() {
     return this->checking_pieces;
 }
 
@@ -74,4 +76,51 @@ void State::print() {
 
 piece::Piece* (*State::get_board())[8] { 
     return this->board; 
+}
+
+// TODO test returning constant pointer
+Material *State::get_pieces(Player p) {
+    if (p == White)
+        return &this->white_pieces;
+    else
+        return &this->black_pieces;
+}
+
+Material *State::get_pieces() {
+    if (this->turn == White)
+        return &this->white_pieces;
+    else
+        return &this->black_pieces;
+}
+
+#define CASE_PIECE(piececlass, piecevector) \
+    case piecetype::piececlass: { \
+        piececlass *new_piece = new piececlass(p, pos); \
+        this->board[i][j] = new_piece; \
+        if (p == White) \
+            this->white_pieces.piecevector.push_back(new_piece); \
+        else \
+            this->black_pieces.piecevector.push_back(new_piece); \
+        break; } \
+
+void State::add_piece(Player p, piecetype::Piece piece, Position pos) {
+    int i = pos.i;
+    int j = pos.j;
+    switch (piece) {
+        CASE_PIECE(Pawn, pawn);
+        CASE_PIECE(Rook, rook);
+        CASE_PIECE(Knight, knight);
+        CASE_PIECE(Bishop, bishop);
+        CASE_PIECE(Queen, queen);
+        case piecetype::King: {
+            King *new_piece = new King(p, pos);
+            this->board[i][j] = new_piece;
+            if (p == White)
+                this->white_pieces.king = new_piece;
+            else
+                this->black_pieces.king = new_piece;
+            break; }
+        default:
+            break;
+    }
 }
