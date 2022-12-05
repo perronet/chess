@@ -57,15 +57,13 @@ bool State::move(Position from, Position to) {
     vector<Position> moves = board[from.i][from.j]->get_legal_moves(this);
     for (auto m : moves) {
         if (m == to) {
+            if (this->check_capture(to))
+                this->remove_piece(to);
             board[from.i][from.j]->set_pos(to);
             board[to.i][to.j] = board[from.i][from.j];
             board[from.i][from.j] = new Empty();
 
-            if (this->turn == White)
-                this->turn = Black;
-            else
-                this->turn = White;
-            
+            this->turn = (Player)!(bool)this->get_turn();
             return true;
         }
     }
@@ -78,6 +76,10 @@ bool State::in_check() {
 
 vector<piece::Piece*> State::get_checking_pieces() {
     return this->checking_pieces;
+}
+
+vector<piece::Piece*> State::get_pinned_pieces() {
+    return this->pinned_pieces;
 }
 
 void State::print() {
@@ -118,7 +120,7 @@ Player State::get_turn() {
     return this->turn;
 }
 
-#define CASE_PIECE(piececlass, piecevector) \
+#define CASE_PIECE_ADD(piececlass, piecevector) \
     case piecetype::piececlass: { \
         piececlass *new_piece = new piececlass(p, pos); \
         this->board[i][j] = new_piece; \
@@ -128,15 +130,25 @@ Player State::get_turn() {
             this->black_pieces.piecevector.push_back(new_piece); \
         break; } \
 
+#define CASE_PIECE_REMOVE(piececlass, piecevector, to_remove) \
+    case piecetype::piececlass: { \
+        if (p == White) { \
+            this->white_pieces.piecevector.erase(remove(this->white_pieces.piecevector.begin(), this->white_pieces.piecevector.end(), to_remove), this->white_pieces.piecevector.end()); \
+        } else { \
+            this->black_pieces.piecevector.erase(remove(this->white_pieces.piecevector.begin(), this->white_pieces.piecevector.end(), to_remove), this->white_pieces.piecevector.end()); \
+        } \
+        delete to_remove; \
+        break; } \
+
 void State::add_piece(Player p, piecetype::Piece piece, Position pos) {
     int i = pos.i;
     int j = pos.j;
     switch (piece) {
-        CASE_PIECE(Pawn, pawn);
-        CASE_PIECE(Rook, rook);
-        CASE_PIECE(Knight, knight);
-        CASE_PIECE(Bishop, bishop);
-        CASE_PIECE(Queen, queen);
+        CASE_PIECE_ADD(Pawn, pawn);
+        CASE_PIECE_ADD(Rook, rook);
+        CASE_PIECE_ADD(Knight, knight);
+        CASE_PIECE_ADD(Bishop, bishop);
+        CASE_PIECE_ADD(Queen, queen);
         case piecetype::King: {
             King *new_piece = new King(p, pos);
             this->board[i][j] = new_piece;
@@ -148,4 +160,27 @@ void State::add_piece(Player p, piecetype::Piece piece, Position pos) {
         default:
             break;
     }
+}
+
+void State::remove_piece(Position pos) {
+    int i = pos.i;
+    int j = pos.j;
+    Piece *to_remove = this->board[pos.i][pos.j];
+    piecetype::Piece piece = to_remove->get_type();
+    Player p = to_remove->get_player();
+    switch (piece) {
+        CASE_PIECE_REMOVE(Pawn, pawn, to_remove);
+        CASE_PIECE_REMOVE(Rook, rook, to_remove);
+        CASE_PIECE_REMOVE(Knight, knight, to_remove);
+        CASE_PIECE_REMOVE(Bishop, bishop, to_remove);
+        CASE_PIECE_REMOVE(Queen, queen, to_remove);
+        default:
+            break;
+    }
+}
+
+bool State::check_capture(Position pos) {
+    return 8 > pos.i && pos.i >= 0 && 8 > pos.j && pos.j >= 0 &&
+    board[pos.i][pos.j]->get_player() == !(bool)this->get_turn() &&
+    board[pos.i][pos.j]->get_type() != piecetype::King;
 }

@@ -30,12 +30,17 @@ namespace state {
             bool move(Position from, Position to);
             bool move(std::string move_notation);
             bool in_check();
+            std::vector<piece::Piece*> get_pinned_pieces();
             std::vector<piece::Piece*> get_checking_pieces();
             void print();
-            void add_piece(Player p, piecetype::Piece piece, Position pos);
             piece::Piece* (*get_board())[8];
             Material *get_pieces(Player p);
             piece::King *get_king(Player p);
             Player get_turn();
+            bool check_capture(Position pos);
+
+        private:
+            void add_piece(Player p, piecetype::Piece piece, Position pos);
+            void remove_piece(Position pos);
     };
 }

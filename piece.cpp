@@ -33,6 +33,14 @@ bool Piece::is_empty() {
     return this->get_type() == piecetype::Empty;
 }
 
+bool Piece::is_pinned(state::State *s) {
+    for (Piece *piece : s->get_pinned_pieces()) {
+        if (piece == this)
+            return true;
+    }
+    return false;
+}
+
 Empty::Empty() {
     symbol = "-";
     player = None;
@@ -65,7 +73,8 @@ vector<Position> Pawn::get_legal_moves(state::State *s) {
     int j = this->pos.j;
     Piece* (*board)[8] = s->get_board();
 
-    // TODO check pin here
+    if (this->is_pinned(s))
+        return v;
 
     if (this->player == White) {
         // Move
@@ -75,7 +84,10 @@ vector<Position> Pawn::get_legal_moves(state::State *s) {
             v.push_back(Position{i - 2, j});
 
         // Capture
-
+        if (s->check_capture(Position{i - 1, j - 1}))
+            v.push_back(Position{i - 1, j - 1});
+        if (s->check_capture(Position{i - 1, j + 1}))
+            v.push_back(Position{i - 1, j + 1});
     } else if (this->player == Black) {
         // Move
         if (board[i + 1][j]->is_empty())
@@ -84,7 +96,10 @@ vector<Position> Pawn::get_legal_moves(state::State *s) {
             v.push_back(Position{i + 2, j});
 
         // Capture
-
+        if (s->check_capture(Position{i + 1, j - 1}))
+            v.push_back(Position{i + 1, j - 1});
+        if (s->check_capture(Position{i + 1, j + 1}))
+            v.push_back(Position{i + 1, j + 1});
     }
 
     return v;

@@ -10,9 +10,6 @@ int main() {
     parse::MoveParser p;
     string move_notation;
 
-    // Position test = p.coord_to_pos("h3").value_or(Position{0,0});
-    // p.parse("Bh3", &s);
-
     s.print();
     cout << "White to play.\n";
 
