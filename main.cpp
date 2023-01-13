@@ -1,13 +1,12 @@
 #include <iostream>
 #include <vector>
 #include "state.h"
-#include "parse.h"
+#include "notation.h"
 
 using namespace std;
 
 int main() {
     state::State s;
-    parse::MoveParser p;
     string move_notation;
 
     s.print();

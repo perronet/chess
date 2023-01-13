@@ -39,7 +39,7 @@ State::State() {
 }
 
 bool State::move(string move_notation) {
-    optional<pair<Position, Position>> result = this->move_parser.parse(move_notation, this);
+    optional<pair<Position, Position>> result = notation::parse(move_notation, *this);
 
     if (!result.has_value())
         return false;
@@ -54,7 +54,7 @@ bool State::move(Position from, Position to) {
         return false;
     }
 
-    vector<Position> moves = board[from.i][from.j]->get_legal_moves(this);
+    vector<Position> moves = board[from.i][from.j]->get_legal_moves(*this);
     for (auto m : moves) {
         if (m == to) {
             if (this->check_capture(to))
@@ -70,21 +70,21 @@ bool State::move(Position from, Position to) {
     return false;
 }
 
-bool State::in_check() {
+bool State::in_check() const {
     return this->checking_pieces.empty();
 }
 
-vector<piece::Piece*> State::get_checking_pieces() {
+vector<piece::Piece*> State::get_checking_pieces() const {
     return this->checking_pieces;
 }
 
-vector<piece::Piece*> State::get_pinned_pieces() {
+vector<piece::Piece*> State::get_pinned_pieces() const {
     return this->pinned_pieces;
 }
 
-void State::print() {
+void State::print() const {
     for (int i = 0; i < 8; ++i) {
-        cout << this->move_parser.row_to_coord(i) << "  ";
+        cout << notation::row_to_coord(i) << "  ";
         for (int j = 0; j < 8; ++j) {
             cout << board[i][j]->get_symbol() << " ";
         }
@@ -92,31 +92,30 @@ void State::print() {
     }
     cout << "   ";
     for (int j = 0; j < 8; ++j) {
-        cout << this->move_parser.col_to_coord(j) << " ";
+        cout << notation::col_to_coord(j) << " ";
     }
     cout << "\n\n";
 }
 
-piece::Piece* (*State::get_board())[8] { 
+const State::board_t& State::get_board() const { 
     return this->board; 
 }
 
-// TODO test returning constant pointer
-Material *State::get_pieces(Player p) {
+const Material& State::get_pieces(Player p) const {
     if (p == White)
-        return &this->white_pieces;
+        return this->white_pieces;
     else
-        return &this->black_pieces;
+        return this->black_pieces;
 }
 
-King *State::get_king(Player p) {
+King *State::get_king(Player p) const {
     if (p == White)
         return this->white_pieces.king;
     else
         return this->black_pieces.king;
 }
 
-Player State::get_turn() {
+Player State::get_turn() const {
     return this->turn;
 }
 
@@ -179,7 +178,7 @@ void State::remove_piece(Position pos) {
     }
 }
 
-bool State::check_capture(Position pos) {
+bool State::check_capture(Position pos) const {
     return 8 > pos.i && pos.i >= 0 && 8 > pos.j && pos.j >= 0 &&
     board[pos.i][pos.j]->get_player() == !(bool)this->get_turn() &&
     board[pos.i][pos.j]->get_type() != piecetype::King;

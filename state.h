@@ -1,9 +1,10 @@
 #pragma once
 
 #include <vector>
+#include <array>
 #include "types.h"
 #include "piece.h"
-#include "parse.h"
+#include "notation.h"
 
 namespace state {
     struct Material {
@@ -17,10 +18,11 @@ namespace state {
     };
 
     class State {
-        piece::Piece *board[8][8];
+        typedef std::array<std::array<piece::Piece*, 8>, 8> board_t;
+
+        board_t board;
         std::vector<piece::Piece*> pinned_pieces;
         std::vector<piece::Piece*> checking_pieces;
-        parse::MoveParser move_parser;
         Material white_pieces;
         Material black_pieces;
         Player turn;
@@ -29,15 +31,15 @@ namespace state {
             State();
             bool move(Position from, Position to);
             bool move(std::string move_notation);
-            bool in_check();
-            std::vector<piece::Piece*> get_pinned_pieces();
-            std::vector<piece::Piece*> get_checking_pieces();
-            void print();
-            piece::Piece* (*get_board())[8];
-            Material *get_pieces(Player p);
-            piece::King *get_king(Player p);
-            Player get_turn();
-            bool check_capture(Position pos);
+            bool in_check() const;
+            std::vector<piece::Piece*> get_pinned_pieces() const;
+            std::vector<piece::Piece*> get_checking_pieces() const;
+            void print() const;
+            const board_t& get_board() const;
+            const Material& get_pieces(Player p) const;
+            piece::King *get_king(Player p) const;
+            Player get_turn() const;
+            bool check_capture(Position pos) const;
 
         private:
             void add_piece(Player p, piecetype::Piece piece, Position pos);

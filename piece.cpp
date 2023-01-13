@@ -33,8 +33,8 @@ bool Piece::is_empty() {
     return this->get_type() == piecetype::Empty;
 }
 
-bool Piece::is_pinned(state::State *s) {
-    for (Piece *piece : s->get_pinned_pieces()) {
+bool Piece::is_pinned(const state::State& s) const {
+    for (Piece *piece : s.get_pinned_pieces()) {
         if (piece == this)
             return true;
     }
@@ -50,7 +50,7 @@ piecetype::Piece Empty::get_type() {
     return piecetype::Empty;
 }
 
-vector<Position> Empty::get_legal_moves(state::State *b) {
+vector<Position> Empty::get_legal_moves(const state::State& s) {
     vector<Position> v;
     return v;
 }
@@ -67,11 +67,11 @@ piecetype::Piece Pawn::get_type() {
     return piecetype::Pawn;
 }
 
-vector<Position> Pawn::get_legal_moves(state::State *s) {
+vector<Position> Pawn::get_legal_moves(const state::State& s) {
     vector<Position> v;
     int i = this->pos.i;
     int j = this->pos.j;
-    Piece* (*board)[8] = s->get_board();
+    auto board = s.get_board();
 
     if (this->is_pinned(s))
         return v;
@@ -84,9 +84,9 @@ vector<Position> Pawn::get_legal_moves(state::State *s) {
             v.push_back(Position{i - 2, j});
 
         // Capture
-        if (s->check_capture(Position{i - 1, j - 1}))
+        if (s.check_capture(Position{i - 1, j - 1}))
             v.push_back(Position{i - 1, j - 1});
-        if (s->check_capture(Position{i - 1, j + 1}))
+        if (s.check_capture(Position{i - 1, j + 1}))
             v.push_back(Position{i - 1, j + 1});
     } else if (this->player == Black) {
         // Move
@@ -96,9 +96,9 @@ vector<Position> Pawn::get_legal_moves(state::State *s) {
             v.push_back(Position{i + 2, j});
 
         // Capture
-        if (s->check_capture(Position{i + 1, j - 1}))
+        if (s.check_capture(Position{i + 1, j - 1}))
             v.push_back(Position{i + 1, j - 1});
-        if (s->check_capture(Position{i + 1, j + 1}))
+        if (s.check_capture(Position{i + 1, j + 1}))
             v.push_back(Position{i + 1, j + 1});
     }
 
@@ -117,8 +117,26 @@ piecetype::Piece Rook::get_type() {
     return piecetype::Rook;
 }
 
-vector<Position> Rook::get_legal_moves(state::State *b) {
+vector<Position> Rook::get_legal_moves(const state::State& s) {
     vector<Position> v;
+    auto board = s.get_board();
+    int pos_i = this->pos.i;
+    int pos_j = this->pos.j;
+
+    if (this->is_pinned(s))
+        return v;
+
+    for (int i = pos_i + 1; i < 7; ++i) {
+        // TODO this will probably repeat a lot... Macro time?
+        if (board[i][pos_j]->is_empty()) {
+            v.push_back(Position{i, pos_j});
+        } else {
+            if (s.check_capture(Position{i, pos_j}))
+                v.push_back(Position{i, pos_j});
+            break;
+        }
+    }
+
     return v;
 }
 
@@ -134,7 +152,7 @@ piecetype::Piece Knight::get_type() {
     return piecetype::Knight;
 }
 
-vector<Position> Knight::get_legal_moves(state::State *b) {
+vector<Position> Knight::get_legal_moves(const state::State& s) {
     vector<Position> v;
     return v;
 }
@@ -151,7 +169,7 @@ piecetype::Piece Bishop::get_type() {
     return piecetype::Bishop;
 }
 
-vector<Position> Bishop::get_legal_moves(state::State *b) {
+vector<Position> Bishop::get_legal_moves(const state::State& s) {
     vector<Position> v;
     return v;
 }
@@ -168,7 +186,7 @@ piecetype::Piece Queen::get_type() {
     return piecetype::Queen;
 }
 
-vector<Position> Queen::get_legal_moves(state::State *b) {
+vector<Position> Queen::get_legal_moves(const state::State& s) {
     vector<Position> v;
     return v;
 }
@@ -185,7 +203,7 @@ piecetype::Piece King::get_type() {
     return piecetype::King;
 }
 
-vector<Position> King::get_legal_moves(state::State *b) {
+vector<Position> King::get_legal_moves(const state::State& s) {
     vector<Position> v;
     return v;
 }
