@@ -34,7 +34,7 @@ bool Piece::is_empty() {
 }
 
 bool Piece::is_pinned(const state::State& s) const {
-    for (Piece *piece : s.get_pinned_pieces()) {
+    for (auto piece : s.get_pinned_pieces()) {
         if (piece == this)
             return true;
     }

@@ -25,6 +25,4 @@ int main() {
             cout << "Invalid move, please retry.\n";
         }
     }
-
-    return 0;
 }
