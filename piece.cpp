@@ -78,28 +78,28 @@ vector<Position> Pawn::get_legal_moves(const state::State& s) {
 
     if (this->player == White) {
         // Move
-        if (board[i - 1][j]->is_empty())
-            v.push_back(Position{i - 1, j});
-        if (this->first_move && board[i - 2][j]->is_empty())
-            v.push_back(Position{i - 2, j});
+        if (board(i - 1, j)->is_empty())
+            v.push_back({i - 1, j});
+        if (this->first_move && board(i - 2, j)->is_empty())
+            v.push_back({i - 2, j});
 
         // Capture
-        if (s.check_capture(Position{i - 1, j - 1}))
-            v.push_back(Position{i - 1, j - 1});
-        if (s.check_capture(Position{i - 1, j + 1}))
-            v.push_back(Position{i - 1, j + 1});
+        if (s.check_capture({i - 1, j - 1}))
+            v.push_back({i - 1, j - 1});
+        if (s.check_capture({i - 1, j + 1}))
+            v.push_back({i - 1, j + 1});
     } else if (this->player == Black) {
         // Move
-        if (board[i + 1][j]->is_empty())
-            v.push_back(Position{i + 1, j});
-        if (this->first_move && board[i + 2][j]->is_empty())
-            v.push_back(Position{i + 2, j});
+        if (board(i + 1,j)->is_empty())
+            v.push_back({i + 1, j});
+        if (this->first_move && board(i + 2, j)->is_empty())
+            v.push_back({i + 2, j});
 
         // Capture
-        if (s.check_capture(Position{i + 1, j - 1}))
-            v.push_back(Position{i + 1, j - 1});
-        if (s.check_capture(Position{i + 1, j + 1}))
-            v.push_back(Position{i + 1, j + 1});
+        if (s.check_capture({i + 1, j - 1}))
+            v.push_back({i + 1, j - 1});
+        if (s.check_capture({i + 1, j + 1}))
+            v.push_back({i + 1, j + 1});
     }
 
     return v;
@@ -126,13 +126,13 @@ vector<Position> Rook::get_legal_moves(const state::State& s) {
     if (this->is_pinned(s))
         return v;
 
-    for (int i = pos_i + 1; i < 7; ++i) {
+    for (int i = pos_i + 1; i < BOARD_SIZE-1; ++i) {
         // TODO this will probably repeat a lot... Macro time?
-        if (board[i][pos_j]->is_empty()) {
-            v.push_back(Position{i, pos_j});
+        if (board(i, pos_j)->is_empty()) {
+            v.push_back({i, pos_j});
         } else {
-            if (s.check_capture(Position{i, pos_j}))
-                v.push_back(Position{i, pos_j});
+            if (s.check_capture({i, pos_j}))
+                v.push_back({i, pos_j});
             break;
         }
     }

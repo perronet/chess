@@ -7,6 +7,16 @@
 #include "notation.h"
 
 namespace state {
+    class Board {
+        piece::Piece* data[BOARD_SIZE*BOARD_SIZE];
+        
+        public:
+            piece::Piece*& operator()(size_t i, size_t j);
+            piece::Piece* operator()(size_t i, size_t j) const;
+            piece::Piece*& operator[](Position p);
+            piece::Piece* operator[](Position p) const;
+    };
+
     struct Material {
         Player player;
         std::vector<const piece::Piece*> pieces;
@@ -14,9 +24,7 @@ namespace state {
     };
 
     class State {
-        typedef std::array<std::array<piece::Piece*, 8>, 8> board_t;
-
-        board_t board;
+        Board board;
         std::vector<const piece::Piece*> pinned_pieces;
         std::vector<const piece::Piece*> checking_pieces;
         Material white_pieces;
@@ -31,7 +39,7 @@ namespace state {
             std::vector<const piece::Piece*> get_pinned_pieces() const;
             std::vector<const piece::Piece*> get_checking_pieces() const;
             void print() const;
-            const board_t& get_board() const;
+            const Board& get_board() const;
             const Material& get_pieces(Player p) const;
             const piece::King* get_king(Player p) const;
             Player get_turn() const;

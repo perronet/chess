@@ -1,5 +1,7 @@
 #pragma once
 
+#define BOARD_SIZE 8
+
 enum Player {White, Black, None};
 
 namespace piecetype { // Avoid name clash with class

@@ -7,6 +7,7 @@
 using namespace std;
 
 namespace notation {
+    // TODO captures without the x?
     optional<pair<Position, Position>> parse(string move, const state::State& s) {
         piecetype::Piece piece = piecetype::Pawn;
         int i = 0;
@@ -57,15 +58,15 @@ namespace notation {
         if (piece == piecetype::Pawn) {
             // Search backwards for the first pawn in the column, starting from pos_to
             if (s.get_turn() == White) {
-                for (int row = pos_to.i; row < 8; ++row) {
-                    if (s.get_board()[row][pos_to.j]->get_type() == piecetype::Pawn) {
+                for (int row = pos_to.i; row < BOARD_SIZE; ++row) {
+                    if (s.get_board()(row, pos_to.j)->get_type() == piecetype::Pawn) {
                         pos_from = Position{row, pos_to.j};
                         break;
                     }
                 }
             } else {
                 for (int row = pos_to.i; row >= 0; --row) {
-                    if (s.get_board()[row][pos_to.j]->get_type() == piecetype::Pawn) {
+                    if (s.get_board()(row, pos_to.j)->get_type() == piecetype::Pawn) {
                         pos_from = Position{row, pos_to.j};
                         break;
                     }
@@ -87,8 +88,8 @@ namespace notation {
         if (coord.length() != 2)
             return nullopt;
         
-        Position pos = Position{8 - (coord[1] - '0'), ((int)coord[0]) - 97};
-        if (8 > pos.i && pos.i >= 0 && 8 > pos.j && pos.j >= 0)
+        Position pos = Position{BOARD_SIZE - (coord[1] - '0'), ((int)coord[0]) - 97};
+        if (BOARD_SIZE > pos.i && pos.i >= 0 && BOARD_SIZE > pos.j && pos.j >= 0)
             return pos;
 
         return nullopt;
@@ -99,7 +100,7 @@ namespace notation {
     }
 
     char row_to_coord(int i) {
-        return '0' + (8 - i);
+        return '0' + (BOARD_SIZE - i);
     }
 
     piecetype::Piece char_to_piece(char c) {
