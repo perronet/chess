@@ -36,12 +36,16 @@ namespace state {
             bool move(Position from, Position to);
             bool move(std::string move_notation);
             bool in_check() const;
+            bool in_blockable_check() const;
+            bool in_checkmate() const;
+            bool in_stalemate() const;
             std::vector<const piece::Piece*> get_pinned_pieces() const;
             std::vector<const piece::Piece*> get_checking_pieces() const;
             void print() const;
             const Board& get_board() const;
             const Material& get_pieces(Player p) const;
-            const piece::King* get_king(Player p) const;
+            const piece::King* get_king() const;
+            const piece::King* get_opponent_king() const;
             Player get_turn() const;
             bool check_capture(Position pos) const;
 
@@ -49,5 +53,6 @@ namespace state {
             void add_piece(Player p, piecetype::Piece piece, Position pos);
             void add_empty(Position pos);
             void remove_piece(Position pos);
+            void update_pins();
     };
 }

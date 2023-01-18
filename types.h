@@ -19,4 +19,8 @@ struct Position {
     bool operator!=(const Position& rhs) const { 
         return !(*this == rhs); 
     }
+
+    bool check_bounds() const {
+        return BOARD_SIZE > i && i >= 0 && BOARD_SIZE > j && j >= 0;
+    }
 };

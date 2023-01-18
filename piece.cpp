@@ -12,15 +12,15 @@ Piece::Piece(Player p, Position pos) {
     this->pos = pos;
 }
 
-string Piece::get_symbol() {
+string Piece::get_symbol() const {
     return symbol;
 }
 
-Player Piece::get_player() {
+Player Piece::get_player() const {
     return player;
 }
 
-Position Piece::get_pos() {
+Position Piece::get_pos() const {
     return pos;
 }
 
@@ -29,7 +29,7 @@ void Piece::set_pos(Position p) {
     first_move = false;
 }
 
-bool Piece::is_empty() {
+bool Piece::is_empty() const {
     return this->get_type() == piecetype::Empty;
 }
 
@@ -46,11 +46,11 @@ Empty::Empty() {
     player = None;
 }
 
-piecetype::Piece Empty::get_type() {
+piecetype::Piece Empty::get_type() const {
     return piecetype::Empty;
 }
 
-vector<Position> Empty::get_legal_moves(const state::State& s) {
+vector<Position> Empty::get_legal_moves(const state::State& s) const {
     vector<Position> v;
     return v;
 }
@@ -63,11 +63,11 @@ Pawn::Pawn(Player p, Position pos) : Piece::Piece(p, pos) {
     }
 }
 
-piecetype::Piece Pawn::get_type() {
+piecetype::Piece Pawn::get_type() const {
     return piecetype::Pawn;
 }
 
-vector<Position> Pawn::get_legal_moves(const state::State& s) {
+vector<Position> Pawn::get_legal_moves(const state::State& s) const {
     vector<Position> v;
     state::Board board = s.get_board();
     int i = this->pos.i;
@@ -113,7 +113,7 @@ Rook::Rook(Player p, Position pos) : Piece::Piece(p, pos) {
     }
 }
 
-piecetype::Piece Rook::get_type() {
+piecetype::Piece Rook::get_type() const {
     return piecetype::Rook;
 }
 
@@ -127,7 +127,7 @@ piecetype::Piece Rook::get_type() {
     } \
 } \
 
-vector<Position> Rook::get_legal_moves(const state::State& s) {
+vector<Position> Rook::get_legal_moves(const state::State& s) const {
     vector<Position> v;
     state::Board board = s.get_board();
     int pos_i = this->pos.i;
@@ -160,11 +160,11 @@ Knight::Knight(Player p, Position pos) : Piece::Piece(p, pos) {
     }
 }
 
-piecetype::Piece Knight::get_type() {
+piecetype::Piece Knight::get_type() const {
     return piecetype::Knight;
 }
 
-vector<Position> Knight::get_legal_moves(const state::State& s) {
+vector<Position> Knight::get_legal_moves(const state::State& s) const {
     vector<Position> v;
     state::Board board = s.get_board();
     int i = this->pos.i;
@@ -173,14 +173,14 @@ vector<Position> Knight::get_legal_moves(const state::State& s) {
     if (this->is_pinned(s))
         return v;
 
-    vector<Position> v_check{
+    vector<Position> v_check {
         {i+1, j+2}, {i+2, j+1},
         {i-1, j-2}, {i-2, j-1},
         {i-1, j+2}, {i-2, j+1},
         {i+1, j-2}, {i+2, j-1},
     };
     for (Position p : v_check) {
-        if (notation::check_range(p)) {
+        if (p.check_bounds()) {
             if (board[p]->is_empty()) {
                 v.push_back(p);
             } else {
@@ -201,11 +201,11 @@ Bishop::Bishop(Player p, Position pos) : Piece::Piece(p, pos) {
     }
 }
 
-piecetype::Piece Bishop::get_type() {
+piecetype::Piece Bishop::get_type() const {
     return piecetype::Bishop;
 }
 
-vector<Position> Bishop::get_legal_moves(const state::State& s) {
+vector<Position> Bishop::get_legal_moves(const state::State& s) const {
     vector<Position> v;
     state::Board board = s.get_board();
     int pos_i = this->pos.i;
@@ -239,11 +239,11 @@ Queen::Queen(Player p, Position pos) : Piece::Piece(p, pos) {
     }
 }
 
-piecetype::Piece Queen::get_type() {
+piecetype::Piece Queen::get_type() const {
     return piecetype::Queen;
 }
 
-vector<Position> Queen::get_legal_moves(const state::State& s) {
+vector<Position> Queen::get_legal_moves(const state::State& s) const {
     vector<Position> v;
     Rook rook(this->player, this->pos);
     Bishop bishop(this->player, this->pos);
@@ -265,11 +265,14 @@ King::King(Player p, Position pos) : Piece::Piece(p, pos) {
     }
 }
 
-piecetype::Piece King::get_type() {
+piecetype::Piece King::get_type() const {
     return piecetype::King;
 }
 
-vector<Position> King::get_legal_moves(const state::State& s) {
+vector<Position> King::get_legal_moves(const state::State& s) const {
     vector<Position> v;
+
+    /* Castle */
+
     return v;
 }

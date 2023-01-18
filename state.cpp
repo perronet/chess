@@ -78,15 +78,122 @@ bool State::move(Position from, Position to) {
             board[to] = board[from];
             this->add_empty(from);
 
-            this->turn = (Player)!(bool)this->get_turn();
+            this->checking_pieces.clear();
+            this->pinned_pieces.clear();
+
+            // Updates pinned list and checking list (discovery check: Queen, Bishop, Rook)
+            // TODO interposing piece doesn't mean you necessarily can't move!
+            this->update_pins();
+
+            // Update checking list (check from the piece that just moved: Knight, Pawn)
+            Piece* moved_piece = board[to];
+            if (moved_piece->get_type() == piecetype::Knight || moved_piece->get_type() == piecetype::Pawn) {
+                vector<Position> next_moves = moved_piece->get_legal_moves(*this);
+                if (find_if(next_moves.begin(), next_moves.end(), [this](auto pos){ 
+                    return board[pos]->get_type() == piecetype::King && board[pos]->get_player() == !this->get_turn();
+                }) < next_moves.end()) {
+                    this->checking_pieces.push_back(moved_piece);
+                }
+            }
+
+            for (auto p : this->checking_pieces)
+                cout << "Check: " << p->get_symbol() << endl;
+            for (auto p : this->pinned_pieces)
+                cout << "Pinned: " << p->get_symbol() << endl;
+
+            this->turn = (Player)!this->get_turn();
             return true;
         }
     }
     return false;
 }
 
+# define CHECK_INTERPOSING(i, j, typ) { \
+    Piece* piece = board(i, j); \
+    if (!piece->is_empty()) { \
+        /* Found ally piece */ \
+        if (piece->get_player() == king->get_player()) { \
+            if (interposing_piece) \
+                break; \
+            interposing_piece = piece; \
+        /* Found enemy piece */ \
+        } else { \
+            if (piece->get_type() == typ || piece->get_type() == piecetype::Queen) { \
+                if (interposing_piece) \
+                    this->pinned_pieces.push_back(interposing_piece); \
+                else \
+                    this->checking_pieces.push_back(piece); \
+            } \
+            break; \
+        } \
+    } \
+} \
+
+void State::update_pins() {
+    const King* king = this->get_opponent_king();
+    int pos_i = king->get_pos().i;
+    int pos_j = king->get_pos().j;
+    Piece* interposing_piece = nullptr;
+
+    /* Rook, Queen */
+    for (int i = pos_i + 1; i < BOARD_SIZE; ++i) {
+        CHECK_INTERPOSING(i, pos_j, piecetype::Rook);
+    }
+    interposing_piece = nullptr;
+    for (int i = pos_i - 1; i >= 0; --i) {
+        CHECK_INTERPOSING(i, pos_j, piecetype::Rook);
+    }
+    interposing_piece = nullptr;
+    for (int j = pos_j + 1; j < BOARD_SIZE; ++j) {
+        CHECK_INTERPOSING(pos_i, j, piecetype::Rook);
+    }
+    interposing_piece = nullptr;
+    for (int j = pos_j - 1; j >= 0; --j) {
+        CHECK_INTERPOSING(pos_i, j, piecetype::Rook);
+    }
+    interposing_piece = nullptr;
+
+    /* Bishop, Queen */
+    int i, j;
+    for (i = pos_i + 1, j = pos_j + 1; i < BOARD_SIZE && j < BOARD_SIZE; ++i, ++j) {
+        CHECK_INTERPOSING(i, j, piecetype::Bishop);
+    }
+    interposing_piece = nullptr;
+    for (i = pos_i + 1, j = pos_j - 1; i < BOARD_SIZE && j >= 0; ++i, --j) {
+        CHECK_INTERPOSING(i, j, piecetype::Bishop);
+    }
+    interposing_piece = nullptr;
+    for (i = pos_i - 1, j = pos_j + 1; i >= 0 && j < BOARD_SIZE; --i, ++j) {
+        CHECK_INTERPOSING(i, j, piecetype::Bishop);
+    }
+    interposing_piece = nullptr;
+    for (i = pos_i - 1, j = pos_j - 1; i >= 0 && j >= 0; --i, --j) {
+        CHECK_INTERPOSING(i, j, piecetype::Bishop);
+    }
+    interposing_piece = nullptr;
+}
+
 bool State::in_check() const {
-    return this->checking_pieces.empty();
+    return !this->checking_pieces.empty();
+}
+
+/* Blockable check: only one piece checking out of Queen, Bishop, Rook */
+bool State::in_blockable_check() const {
+    return this->checking_pieces.size() == 1 && (
+        this->checking_pieces[0]->get_type() == piecetype::Queen ||
+        this->checking_pieces[0]->get_type() == piecetype::Bishop ||
+        this->checking_pieces[0]->get_type() == piecetype::Rook
+    );
+}
+
+// TODO
+bool State::in_checkmate() const {
+    return false;
+}
+
+// TODO
+bool State::in_stalemate() const {
+    return false;
 }
 
 vector<const piece::Piece*> State::get_checking_pieces() const {
@@ -123,11 +230,18 @@ const Material& State::get_pieces(Player p) const {
         return this->black_pieces;
 }
 
-const King* State::get_king(Player p) const {
-    if (p == White)
+const King* State::get_king() const {
+    if (this->get_turn() == White)
         return this->white_pieces.king;
     else
         return this->black_pieces.king;
+}
+
+const King* State::get_opponent_king() const {
+    if (this->get_turn() == White)
+        return this->black_pieces.king;
+    else
+        return this->white_pieces.king;
 }
 
 Player State::get_turn() const {
@@ -205,8 +319,8 @@ void State::remove_piece(Position pos) {
     }
 }
 
+/* King capture is considered legal in order to detect checks */
 bool State::check_capture(Position pos) const {
-    return notation::check_range(pos) &&
-    board[pos]->get_player() == !(bool)this->get_turn() &&
-    board[pos]->get_type() != piecetype::King;
+    return pos.check_bounds() &&
+    board[pos]->get_player() == !this->get_turn();
 }

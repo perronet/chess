@@ -125,8 +125,4 @@ namespace notation {
                 break;
         }
     }
-
-    bool check_range(Position pos) {
-        return BOARD_SIZE > pos.i && pos.i >= 0 && BOARD_SIZE > pos.j && pos.j >= 0;
-    }
 }
