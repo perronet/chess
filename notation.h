@@ -15,4 +15,5 @@ namespace notation {
     piecetype::Piece char_to_piece(char c);
     char col_to_coord(int idx);
     char row_to_coord(int idx);
+    bool check_range(Position pos);
 }

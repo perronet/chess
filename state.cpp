@@ -206,7 +206,7 @@ void State::remove_piece(Position pos) {
 }
 
 bool State::check_capture(Position pos) const {
-    return BOARD_SIZE > pos.i && pos.i >= 0 && BOARD_SIZE > pos.j && pos.j >= 0 &&
+    return notation::check_range(pos) &&
     board[pos]->get_player() == !(bool)this->get_turn() &&
     board[pos]->get_type() != piecetype::King;
 }

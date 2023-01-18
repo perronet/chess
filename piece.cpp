@@ -69,9 +69,9 @@ piecetype::Piece Pawn::get_type() {
 
 vector<Position> Pawn::get_legal_moves(const state::State& s) {
     vector<Position> v;
+    state::Board board = s.get_board();
     int i = this->pos.i;
     int j = this->pos.j;
-    auto board = s.get_board();
 
     if (this->is_pinned(s))
         return v;
@@ -117,24 +117,36 @@ piecetype::Piece Rook::get_type() {
     return piecetype::Rook;
 }
 
+#define CHECK_EMPTY_OR_CAPTURE(i, j) { \
+    if (board(i, j)->is_empty()) { \
+        v.push_back({i, j}); \
+    } else { \
+        if (s.check_capture({i, j})) \
+            v.push_back({i, j}); \
+        break; \
+    } \
+} \
+
 vector<Position> Rook::get_legal_moves(const state::State& s) {
     vector<Position> v;
-    auto board = s.get_board();
+    state::Board board = s.get_board();
     int pos_i = this->pos.i;
     int pos_j = this->pos.j;
 
     if (this->is_pinned(s))
         return v;
 
-    for (int i = pos_i + 1; i < BOARD_SIZE-1; ++i) {
-        // TODO this will probably repeat a lot... Macro time?
-        if (board(i, pos_j)->is_empty()) {
-            v.push_back({i, pos_j});
-        } else {
-            if (s.check_capture({i, pos_j}))
-                v.push_back({i, pos_j});
-            break;
-        }
+    for (int i = pos_i + 1; i < BOARD_SIZE; ++i) {
+        CHECK_EMPTY_OR_CAPTURE(i, pos_j);
+    }
+    for (int i = pos_i - 1; i >= 0; --i) {
+        CHECK_EMPTY_OR_CAPTURE(i, pos_j);
+    }
+    for (int j = pos_j + 1; j < BOARD_SIZE; ++j) {
+        CHECK_EMPTY_OR_CAPTURE(pos_i, j);
+    }
+    for (int j = pos_j - 1; j >= 0; --j) {
+        CHECK_EMPTY_OR_CAPTURE(pos_i, j);
     }
 
     return v;
@@ -154,6 +166,30 @@ piecetype::Piece Knight::get_type() {
 
 vector<Position> Knight::get_legal_moves(const state::State& s) {
     vector<Position> v;
+    state::Board board = s.get_board();
+    int i = this->pos.i;
+    int j = this->pos.j;
+
+    if (this->is_pinned(s))
+        return v;
+
+    vector<Position> v_check{
+        {i+1, j+2}, {i+2, j+1},
+        {i-1, j-2}, {i-2, j-1},
+        {i-1, j+2}, {i-2, j+1},
+        {i+1, j-2}, {i+2, j-1},
+    };
+    for (Position p : v_check) {
+        if (notation::check_range(p)) {
+            if (board[p]->is_empty()) {
+                v.push_back(p);
+            } else {
+                if (s.check_capture(p))
+                    v.push_back(p);
+            }
+        }
+    }
+
     return v;
 }
 
@@ -171,6 +207,27 @@ piecetype::Piece Bishop::get_type() {
 
 vector<Position> Bishop::get_legal_moves(const state::State& s) {
     vector<Position> v;
+    state::Board board = s.get_board();
+    int pos_i = this->pos.i;
+    int pos_j = this->pos.j;
+
+    if (this->is_pinned(s))
+        return v;
+
+    int i, j;
+    for (i = pos_i + 1, j = pos_j + 1; i < BOARD_SIZE && j < BOARD_SIZE; ++i, ++j) {
+        CHECK_EMPTY_OR_CAPTURE(i, j);
+    }
+    for (i = pos_i + 1, j = pos_j - 1; i < BOARD_SIZE && j >= 0; ++i, --j) {
+        CHECK_EMPTY_OR_CAPTURE(i, j);
+    }
+    for (i = pos_i - 1, j = pos_j + 1; i >= 0 && j < BOARD_SIZE; --i, ++j) {
+        CHECK_EMPTY_OR_CAPTURE(i, j);
+    }
+    for (i = pos_i - 1, j = pos_j - 1; i >= 0 && j >= 0; --i, --j) {
+        CHECK_EMPTY_OR_CAPTURE(i, j);
+    }
+
     return v;
 }
 
@@ -188,6 +245,15 @@ piecetype::Piece Queen::get_type() {
 
 vector<Position> Queen::get_legal_moves(const state::State& s) {
     vector<Position> v;
+    Rook rook(this->player, this->pos);
+    Bishop bishop(this->player, this->pos);
+
+    if (this->is_pinned(s))
+        return v;
+
+    v = rook.get_legal_moves(s);
+    vector<Position> v_bishop = bishop.get_legal_moves(s);
+    v.insert(v.end(), v_bishop.begin(), v_bishop.end());
     return v;
 }
 
