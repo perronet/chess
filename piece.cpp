@@ -56,16 +56,35 @@ vector<Position> Piece::get_legal_moves_pinned(const state::State& s, const Piec
         v.push_back(pinner->get_pos()); // Capture
     }
 
-    for (auto x : v)
-        cout << x.i << " " << x.j << endl;
-
     return v;
+}
+
+std::unique_ptr<Piece> Piece::get_piece_by_type(piecetype::Piece typ, Player p, Position pos) {
+    switch (typ) {
+        case piecetype::Pawn:
+            return std::make_unique<Pawn>(p, pos);
+        case piecetype::Knight:
+            return std::make_unique<Knight>(p, pos);
+        case piecetype::Bishop:
+            return std::make_unique<Bishop>(p, pos);
+        case piecetype::Queen:
+            return std::make_unique<Queen>(p, pos);
+        case piecetype::King:
+            return std::make_unique<King>(p, pos);
+        default:
+            return std::make_unique<Empty>(p, pos);
+    }
 }
 
 Empty::Empty() {
     symbol = "-";
     player = None;
 }
+
+Empty::Empty(Player p, Position pos) : Piece::Piece(p, pos) {
+    symbol = "-";
+}
+
 
 piecetype::Piece Empty::get_type() const {
     return piecetype::Empty;
@@ -241,12 +260,8 @@ vector<Position> Knight::get_legal_moves(const state::State& s) const {
     };
     for (Position p : v_check) {
         if (p.check_bounds()) {
-            if (board[p]->is_empty()) {
+            if (board[p]->is_empty() || s.check_capture(p))
                 v.push_back(p);
-            } else {
-                if (s.check_capture(p))
-                    v.push_back(p);
-            }
         }
     }
 
@@ -333,8 +348,37 @@ piecetype::Piece King::get_type() const {
 
 vector<Position> King::get_legal_moves(const state::State& s) const {
     vector<Position> v;
+    Player curr_player = s.get_turn();
+    state::Board board = s.get_board();
+
+    for (Position p : this->get_moves_unrestricted(s)) {
+        if (!s.is_square_attacked(p, curr_player))
+            v.push_back(p);
+    }
 
     /* Castle */
+    // if (this->first_move) {
+
+    // }
+
+    return v;
+}
+
+std::vector<Position> King::get_moves_unrestricted(const state::State& s) const {
+    vector<Position> v;
+    state::Board board = s.get_board();
+    int i = this->pos.i;
+    int j = this->pos.j;
+
+    vector<Position> v_check {
+        {i, j+1}, {i, j-1}, {i+1, j}, {i-1, j},
+        {i+1, j+1}, {i-1, j-1}, {i+1, j-1}, {i-1, j+1}
+    };
+
+    for (Position p : v_check) {
+        if (p.check_bounds() && (board[p]->is_empty() || s.check_capture(p)))
+            v.push_back(p);
+    }
 
     return v;
 }

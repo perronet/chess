@@ -82,7 +82,7 @@ bool State::move(Position from, Position to) {
             this->pinned_pieces.clear();
 
             // Updates pinned list and checking list (discovery check: Queen, Bishop, Rook)
-            this->update_pins();
+            this->update_pins_and_checks();
 
             // Update checking list (check from the piece that just moved: Knight, Pawn)
             Piece* moved_piece = board[to];
@@ -128,7 +128,7 @@ bool State::move(Position from, Position to) {
     } \
 } \
 
-void State::update_pins() {
+void State::update_pins_and_checks() {
     const King* king = this->get_opponent_king();
     int pos_i = king->get_pos().i;
     int pos_j = king->get_pos().j;
@@ -185,6 +185,10 @@ bool State::in_blockable_check() const {
     );
 }
 
+bool State::in_double_check() const {
+    return this->checking_pieces.size() >= 2;
+}
+
 // TODO
 bool State::in_checkmate() const {
     return false;
@@ -192,6 +196,44 @@ bool State::in_checkmate() const {
 
 // TODO
 bool State::in_stalemate() const {
+    return false;
+}
+
+/*
+    Given a player, "under attack" means that an enemy piece stares at the square. 
+    It doesn't matter whether that piece can legally move there or not (e.g. piece is pinned).
+
+    Principle: If a piece is attacking another piece of the same type, then both pieces are attacking each other.
+    Therefore: build map (piecetype, legal_moves_from_pos) 
+    Then ask: is one of the legal moves capturing an enemy piece of the same type? If yes, the square is under attack.
+*/
+bool State::is_square_attacked(Position pos, Player p) const {
+    Player opponent = (Player)!p;
+    vector<Position> moves;
+    
+    for (int typ = 0; typ != piecetype::Empty; typ++) {
+        /* 
+            Problem: computing the legal moves of the king involves calling is_square_attacked, creating recursion. 
+            It has to be treated as a separate case, ignoring squares under attack.
+        */
+        if (typ == piecetype::King) {
+            King king(p, pos);
+            moves = king.get_moves_unrestricted(*this);
+        } else {
+            auto piece = Piece::get_piece_by_type((piecetype::Piece)typ, p, pos);
+            moves = piece->get_legal_moves(*this);
+        }
+
+        if (find_if(moves.begin(), moves.end(), [&](Position move){
+            Piece* attacked_piece = this->get_board()[move];
+            return attacked_piece->get_player() == opponent && attacked_piece->get_type() == typ;
+        }) < moves.end()) {
+            return true;
+        }
+
+        moves.clear();
+    }
+
     return false;
 }
 

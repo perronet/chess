@@ -3,6 +3,7 @@
 #include <vector>
 #include <iostream>
 #include <optional>
+#include <memory>
 #include "types.h"
 
 namespace state {
@@ -29,11 +30,14 @@ namespace piece {
             Player get_player() const;
             bool is_empty() const;
             std::optional<const Piece*> check_pinned(const state::State& s) const; // Returns the pinner if the piece is pinned
+
+            static std::unique_ptr<Piece> get_piece_by_type(piecetype::Piece typ, Player p, Position pos);
     };
 
     class Empty: public Piece {
         public:
             Empty();
+            Empty(Player p, Position pos);
             piecetype::Piece get_type() const;
             std::vector<Position> get_legal_moves(const state::State& s) const;
     };
@@ -75,9 +79,15 @@ namespace piece {
     };
 
     class King: public Piece {
+        friend class state::State;
+
         public:
             King(Player p, Position pos);
             piecetype::Piece get_type() const;
             std::vector<Position> get_legal_moves(const state::State& s) const;
+
+        private:
+            /* King moves without accounting for squares under attack. Some of these moves might be illegal. */
+            std::vector<Position> get_moves_unrestricted(const state::State& s) const;
     };
 }
