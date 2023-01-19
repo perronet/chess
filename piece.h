@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <iostream>
+#include <optional>
 #include "types.h"
 
 namespace state {
@@ -20,13 +21,14 @@ namespace piece {
             Piece();
             Piece(Player p, Position pos);
             virtual std::vector<Position> get_legal_moves(const state::State& s) const = 0;
+            virtual std::vector<Position> get_legal_moves_pinned(const state::State& s, const Piece* pinner) const;
             virtual piecetype::Piece get_type() const = 0;
             std::string get_symbol() const;
             Position get_pos() const;
             void set_pos(Position p);
             Player get_player() const;
             bool is_empty() const;
-            bool is_pinned(const state::State& s) const;
+            std::optional<const Piece*> check_pinned(const state::State& s) const; // Returns the pinner if the piece is pinned
     };
 
     class Empty: public Piece {
@@ -41,6 +43,7 @@ namespace piece {
             Pawn(Player p, Position pos);
             piecetype::Piece get_type() const;
             std::vector<Position> get_legal_moves(const state::State& s) const;
+            std::vector<Position> get_legal_moves_pinned(const state::State& s, const Piece* pinner) const override;
     };
 
     class Rook: public Piece {

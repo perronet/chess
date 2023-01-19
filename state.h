@@ -25,7 +25,7 @@ namespace state {
 
     class State {
         Board board;
-        std::vector<const piece::Piece*> pinned_pieces;
+        std::vector<std::pair<const piece::Piece*, const piece::Piece*>> pinned_pieces; // (pinner, pinned)
         std::vector<const piece::Piece*> checking_pieces;
         Material white_pieces;
         Material black_pieces;
@@ -39,7 +39,7 @@ namespace state {
             bool in_blockable_check() const;
             bool in_checkmate() const;
             bool in_stalemate() const;
-            std::vector<const piece::Piece*> get_pinned_pieces() const;
+            std::vector<std::pair<const piece::Piece*, const piece::Piece*>> get_pinned_pieces() const;
             std::vector<const piece::Piece*> get_checking_pieces() const;
             void print() const;
             const Board& get_board() const;

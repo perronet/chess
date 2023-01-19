@@ -82,7 +82,6 @@ bool State::move(Position from, Position to) {
             this->pinned_pieces.clear();
 
             // Updates pinned list and checking list (discovery check: Queen, Bishop, Rook)
-            // TODO interposing piece doesn't mean you necessarily can't move!
             this->update_pins();
 
             // Update checking list (check from the piece that just moved: Knight, Pawn)
@@ -99,7 +98,7 @@ bool State::move(Position from, Position to) {
             for (auto p : this->checking_pieces)
                 cout << "Check: " << p->get_symbol() << endl;
             for (auto p : this->pinned_pieces)
-                cout << "Pinned: " << p->get_symbol() << endl;
+                cout << "Pinned: (" << p.first->get_symbol() << ", " << p.second->get_symbol() << ")" << endl;
 
             this->turn = (Player)!this->get_turn();
             return true;
@@ -120,7 +119,7 @@ bool State::move(Position from, Position to) {
         } else { \
             if (piece->get_type() == typ || piece->get_type() == piecetype::Queen) { \
                 if (interposing_piece) \
-                    this->pinned_pieces.push_back(interposing_piece); \
+                    this->pinned_pieces.push_back(make_pair(piece, interposing_piece)); \
                 else \
                     this->checking_pieces.push_back(piece); \
             } \
@@ -200,7 +199,7 @@ vector<const piece::Piece*> State::get_checking_pieces() const {
     return this->checking_pieces;
 }
 
-vector<const piece::Piece*> State::get_pinned_pieces() const {
+vector<pair<const piece::Piece*, const piece::Piece*>> State::get_pinned_pieces() const {
     return this->pinned_pieces;
 }
 
@@ -295,7 +294,9 @@ void State::remove_piece(Position pos) {
     if (piece != piecetype::King) {
         this->board[pos] = nullptr;
         this->pinned_pieces.erase(
-            remove(this->pinned_pieces.begin(), this->pinned_pieces.end(), to_remove),
+            remove_if(this->pinned_pieces.begin(), this->pinned_pieces.end(), [to_remove](auto pin) {
+                return pin.first == to_remove || pin.second == to_remove;
+            }),
             this->pinned_pieces.end()
         );
         this->checking_pieces.erase(
