@@ -4,6 +4,7 @@
 #include <iostream>
 #include <optional>
 #include <memory>
+#include <algorithm>
 #include "types.h"
 
 namespace state {
@@ -28,6 +29,7 @@ namespace piece {
             Position get_pos() const;
             void set_pos(Position p);
             Player get_player() const;
+            bool is_first_move() const;
             bool is_empty() const;
             std::optional<const Piece*> check_pinned(const state::State& s) const; // Returns the pinner if the piece is pinned
 

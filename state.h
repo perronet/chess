@@ -55,6 +55,9 @@ namespace state {
             void add_piece(Player p, piecetype::Piece piece, Position pos);
             void add_empty(Position pos);
             void remove_piece(Position pos);
+            void move_piece(Position from, Position to);
             void update_pins_and_checks();
+            bool is_castling_move(Position king_from, Position king_to) const;
+            std::optional<std::pair<Position, Position>> get_castling_rook_move(Position king_from, Position king_to) const;
     };
 }

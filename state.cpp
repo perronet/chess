@@ -73,15 +73,21 @@ bool State::move(Position from, Position to) {
     vector<Position> moves = board[from]->get_legal_moves(*this);
     for (auto m : moves) {
         if (m == to) {
-            this->remove_piece(to);
-            board[from]->set_pos(to);
-            board[to] = board[from];
-            this->add_empty(from);
+            // Is it a castling move? Then move the corresponding rook first
+            if (this->is_castling_move(from, to)) {
+                auto rook_move = this->get_castling_rook_move(from, to);
+                if (!rook_move.has_value())
+                    return false;
+                
+                this->move_piece(rook_move.value().first, rook_move.value().second);
+            }
 
+            // Move the piece
+            this->move_piece(from, to);
+
+            // Update pinned list and checking list (discovery check: Queen, Bishop, Rook)
             this->checking_pieces.clear();
             this->pinned_pieces.clear();
-
-            // Updates pinned list and checking list (discovery check: Queen, Bishop, Rook)
             this->update_pins_and_checks();
 
             // Update checking list (check from the piece that just moved: Knight, Pawn)
@@ -261,7 +267,7 @@ void State::print() const {
 }
 
 const state::Board& State::get_board() const { 
-    return this->board; 
+    return board; 
 }
 
 const Material& State::get_pieces(Player p) const {
@@ -292,7 +298,7 @@ Player State::get_turn() const {
 #define CASE_PIECE_ADD(piececlass) \
     case piecetype::piececlass: { \
         piececlass *new_piece = new piececlass(p, pos); \
-        this->board[pos] = new_piece; \
+        board[pos] = new_piece; \
         if (p == White) \
             this->white_pieces.pieces.push_back(new_piece); \
         else \
@@ -302,6 +308,10 @@ Player State::get_turn() const {
 void State::add_piece(Player p, piecetype::Piece piece, Position pos) {
     int i = pos.i;
     int j = pos.j;
+
+    if (!pos.check_bounds())
+        return;
+
     switch (piece) {
         CASE_PIECE_ADD(Pawn);
         CASE_PIECE_ADD(Rook);
@@ -310,7 +320,7 @@ void State::add_piece(Player p, piecetype::Piece piece, Position pos) {
         CASE_PIECE_ADD(Queen);
         case piecetype::King: {
             King *new_piece = new King(p, pos);
-            this->board[pos] = new_piece;
+            board[pos] = new_piece;
             if (p == White)
                 this->white_pieces.king = new_piece;
             else
@@ -329,12 +339,15 @@ void State::add_empty(Position pos) {
     Cleanup references from: board, material, pinned_pieces, checking_pieces
 */
 void State::remove_piece(Position pos) {
-    Piece* to_remove = this->board[pos];
+    Piece* to_remove = board[pos];
     piecetype::Piece piece = to_remove->get_type();
     Player p = to_remove->get_player();
 
+    if (!pos.check_bounds())
+        return;
+
     if (piece != piecetype::King) {
-        this->board[pos] = nullptr;
+        board[pos] = nullptr;
         this->pinned_pieces.erase(
             remove_if(this->pinned_pieces.begin(), this->pinned_pieces.end(), [to_remove](auto pin) {
                 return pin.first == to_remove || pin.second == to_remove;
@@ -362,8 +375,43 @@ void State::remove_piece(Position pos) {
     }
 }
 
+void State::move_piece(Position from, Position to) {
+    if (!from.check_bounds() || !to.check_bounds())
+        return;
+
+    this->remove_piece(to);
+    board[from]->set_pos(to);
+    board[to] = board[from];
+    this->add_empty(from);
+}
+
 /* King capture is considered legal in order to detect checks */
 bool State::check_capture(Position pos) const {
     return pos.check_bounds() &&
     board[pos]->get_player() == !this->get_turn();
+}
+
+/* Assumes move is legal */
+bool State::is_castling_move(Position king_from, Position king_to) const {
+    return board[king_from]->get_type() == piecetype::King && king_from.range(king_to).size() == 1;
+}
+
+/* Assumes move is legal */
+optional<pair<Position, Position>> State::get_castling_rook_move(Position king_from, Position king_to) const {
+    if (this->is_castling_move(king_from, king_to)) {
+        Position queen_rook = Position{king_to.i, king_to.j-2};
+        Position king_rook = Position{king_from.i, king_to.j+1};
+
+        if (queen_rook.check_bounds() &&
+            board[queen_rook]->get_type() == piecetype::Rook && 
+            board[queen_rook]->get_player() == this->get_turn())
+            return make_pair(queen_rook, Position{king_to.i, king_to.j+1}); // Rook to the right
+
+        if (king_rook.check_bounds() &&
+            board[king_rook]->get_type() == piecetype::Rook && 
+            board[king_rook]->get_player() == this->get_turn())
+            return make_pair(king_rook, Position{king_to.i, king_to.j-1}); // Rook to the left
+    }
+
+    return nullopt;
 }

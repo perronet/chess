@@ -33,6 +33,10 @@ bool Piece::is_empty() const {
     return this->get_type() == piecetype::Empty;
 }
 
+bool Piece::is_first_move() const {
+    return this->first_move;
+}
+
 optional<const Piece*> Piece::check_pinned(const state::State& s) const {
     optional<const Piece*> ret = nullopt; 
     for (auto pin : s.get_pinned_pieces()) {
@@ -350,6 +354,8 @@ vector<Position> King::get_legal_moves(const state::State& s) const {
     vector<Position> v;
     Player curr_player = s.get_turn();
     state::Board board = s.get_board();
+    int i = this->pos.i;
+    int j = this->pos.j;
 
     for (Position p : this->get_moves_unrestricted(s)) {
         if (!s.is_square_attacked(p, curr_player))
@@ -357,9 +363,29 @@ vector<Position> King::get_legal_moves(const state::State& s) const {
     }
 
     /* Castle */
-    // if (this->first_move) {
+    if (this->first_move && !s.in_check()) {
+        /* Queen rook, King rook */
+        for (Position rook_pos : {Position{i, j-4}, Position{i, j+3}}) {
+            if (rook_pos.check_bounds()) {
+                Piece* rook = board[rook_pos];
+                if (rook->is_first_move() && 
+                    rook->get_player() == curr_player && 
+                    rook->get_type() == piecetype::Rook) {
 
-    // }
+                    Position new_king_pos = rook_pos.j < j ? Position{i, j-2} : Position{i, j+2};
+                    Position new_king_pos_bound = rook_pos.j < j ? Position{i, j-3} : Position{i, j+3};
+
+                    /* All squares the King passes through must not be under attack */
+                    vector<Position> v_check = this->get_pos().range(new_king_pos_bound);
+                    if (all_of(v_check.begin(), v_check.end(), [&](Position p) {
+                        return !s.is_square_attacked(p, curr_player);
+                    })) {
+                        v.push_back(new_king_pos);
+                    }
+                }
+            }
+        }
+    }
 
     return v;
 }
