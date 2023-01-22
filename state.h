@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <array>
+#include <cassert>
 #include "types.h"
 #include "piece.h"
 #include "notation.h"

@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <cmath>
+#include <string>
 
 #define BOARD_SIZE 8
 
@@ -21,6 +22,10 @@ struct Position {
 
     bool operator!=(const Position& rhs) const { 
         return !(*this == rhs); 
+    }
+
+    std::string to_string() const {
+        return std::string("(") + std::to_string(i) + ", " + std::to_string(j) + ")";
     }
 
     bool check_bounds() const {
@@ -63,5 +68,11 @@ struct Position {
 
     bool is_diagonal_to(Position other) {
         return std::abs(this->i - other.i) == std::abs(this->j - other.j);
+    }
+};
+
+struct PositionHash {
+    size_t operator()(const Position& pos) const {
+        return pos.i ^ pos.j;
     }
 };

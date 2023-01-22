@@ -101,15 +101,14 @@ bool State::move(Position from, Position to) {
                 }
             }
 
-            for (auto p : this->checking_pieces)
-                cout << "Check: " << p->get_symbol() << endl;
-            for (auto p : this->pinned_pieces)
-                cout << "Pinned: (" << p.first->get_symbol() << ", " << p.second->get_symbol() << ")" << endl;
+            /* King under check after moving = there is a bug. */
+            assert(!is_square_attacked(this->get_king()->get_pos(), this->get_turn()));
 
             this->turn = (Player)!this->get_turn();
             return true;
         }
     }
+
     return false;
 }
 

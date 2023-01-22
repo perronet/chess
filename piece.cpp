@@ -63,6 +63,31 @@ vector<Position> Piece::get_legal_moves_pinned(const state::State& s, const Piec
     return v;
 }
 
+void Piece::filter_legal_moves_under_check(const state::State& s, vector<Position>& moves) const {
+    if (!s.in_check() || s.in_double_check())
+        return;
+    
+    Position checker_pos = s.get_checking_pieces()[0]->get_pos();
+    unordered_set<Position, PositionHash> potential_moves;
+    
+    // Capturing the checking piece
+    potential_moves.insert(checker_pos);
+
+    // Blocking the check
+    if (s.in_blockable_check()) {
+        for (Position blocking_move: checker_pos.range(s.get_king()->get_pos()))
+            potential_moves.insert(blocking_move);
+    }
+
+    // Take the intersection between moves and potential_moves
+    moves.erase(
+        remove_if(moves.begin(), moves.end(), [&](Position m) {
+            return potential_moves.find(m) == potential_moves.end();
+        }),
+        moves.end()
+    );
+}
+
 std::unique_ptr<Piece> Piece::get_piece_by_type(piecetype::Piece typ, Player p, Position pos) {
     switch (typ) {
         case piecetype::Pawn:
@@ -117,35 +142,41 @@ vector<Position> Pawn::get_legal_moves(const state::State& s) const {
     int i = this->pos.i;
     int j = this->pos.j;
 
+    if (s.in_double_check())
+        return v;
+
     auto pinner = this->check_pinned(s);
-    if (pinner.has_value())
-        return this->get_legal_moves_pinned(s, pinner.value());
+    if (pinner.has_value()) {
+        v = this->get_legal_moves_pinned(s, pinner.value());
+    } else {
+        if (this->player == White) {
+            // Move
+            if (board(i - 1, j)->is_empty())
+                v.push_back({i - 1, j});
+            if (this->first_move && board(i - 2, j)->is_empty())
+                v.push_back({i - 2, j});
 
-    if (this->player == White) {
-        // Move
-        if (board(i - 1, j)->is_empty())
-            v.push_back({i - 1, j});
-        if (this->first_move && board(i - 2, j)->is_empty())
-            v.push_back({i - 2, j});
+            // Capture
+            if (s.check_capture({i - 1, j - 1}))
+                v.push_back({i - 1, j - 1});
+            if (s.check_capture({i - 1, j + 1}))
+                v.push_back({i - 1, j + 1});
+        } else if (this->player == Black) {
+            // Move
+            if (board(i + 1,j)->is_empty())
+                v.push_back({i + 1, j});
+            if (this->first_move && board(i + 2, j)->is_empty())
+                v.push_back({i + 2, j});
 
-        // Capture
-        if (s.check_capture({i - 1, j - 1}))
-            v.push_back({i - 1, j - 1});
-        if (s.check_capture({i - 1, j + 1}))
-            v.push_back({i - 1, j + 1});
-    } else if (this->player == Black) {
-        // Move
-        if (board(i + 1,j)->is_empty())
-            v.push_back({i + 1, j});
-        if (this->first_move && board(i + 2, j)->is_empty())
-            v.push_back({i + 2, j});
-
-        // Capture
-        if (s.check_capture({i + 1, j - 1}))
-            v.push_back({i + 1, j - 1});
-        if (s.check_capture({i + 1, j + 1}))
-            v.push_back({i + 1, j + 1});
+            // Capture
+            if (s.check_capture({i + 1, j - 1}))
+                v.push_back({i + 1, j - 1});
+            if (s.check_capture({i + 1, j + 1}))
+                v.push_back({i + 1, j + 1});
+        }
     }
+
+    this->filter_legal_moves_under_check(s, v);
 
     return v;
 }
@@ -213,22 +244,28 @@ vector<Position> Rook::get_legal_moves(const state::State& s) const {
     int pos_i = this->pos.i;
     int pos_j = this->pos.j;
 
-    auto pinner = this->check_pinned(s);
-    if (pinner.has_value())
-        return this->get_legal_moves_pinned(s, pinner.value());
+    if (s.in_double_check())
+        return v;
 
-    for (int i = pos_i + 1; i < BOARD_SIZE; ++i) {
-        CHECK_EMPTY_OR_CAPTURE(i, pos_j);
+    auto pinner = this->check_pinned(s);
+    if (pinner.has_value()) {
+        v = this->get_legal_moves_pinned(s, pinner.value());
+    } else {
+        for (int i = pos_i + 1; i < BOARD_SIZE; ++i) {
+            CHECK_EMPTY_OR_CAPTURE(i, pos_j);
+        }
+        for (int i = pos_i - 1; i >= 0; --i) {
+            CHECK_EMPTY_OR_CAPTURE(i, pos_j);
+        }
+        for (int j = pos_j + 1; j < BOARD_SIZE; ++j) {
+            CHECK_EMPTY_OR_CAPTURE(pos_i, j);
+        }
+        for (int j = pos_j - 1; j >= 0; --j) {
+            CHECK_EMPTY_OR_CAPTURE(pos_i, j);
+        }
     }
-    for (int i = pos_i - 1; i >= 0; --i) {
-        CHECK_EMPTY_OR_CAPTURE(i, pos_j);
-    }
-    for (int j = pos_j + 1; j < BOARD_SIZE; ++j) {
-        CHECK_EMPTY_OR_CAPTURE(pos_i, j);
-    }
-    for (int j = pos_j - 1; j >= 0; --j) {
-        CHECK_EMPTY_OR_CAPTURE(pos_i, j);
-    }
+
+    this->filter_legal_moves_under_check(s, v);
 
     return v;
 }
@@ -251,23 +288,28 @@ vector<Position> Knight::get_legal_moves(const state::State& s) const {
     int i = this->pos.i;
     int j = this->pos.j;
 
-    /* Knight has no legal moves when pinned */
-    auto pinner = this->check_pinned(s);
-    if (pinner.has_value())
+    if (s.in_double_check())
         return v;
 
-    vector<Position> v_check {
-        {i+1, j+2}, {i+2, j+1},
-        {i-1, j-2}, {i-2, j-1},
-        {i-1, j+2}, {i-2, j+1},
-        {i+1, j-2}, {i+2, j-1},
-    };
-    for (Position p : v_check) {
-        if (p.check_bounds()) {
-            if (board[p]->is_empty() || s.check_capture(p))
-                v.push_back(p);
+    auto pinner = this->check_pinned(s);
+    if (pinner.has_value()) {
+        v = this->get_legal_moves_pinned(s, pinner.value());
+    } else {
+        vector<Position> v_check {
+            {i+1, j+2}, {i+2, j+1},
+            {i-1, j-2}, {i-2, j-1},
+            {i-1, j+2}, {i-2, j+1},
+            {i+1, j-2}, {i+2, j-1},
+        };
+        for (Position p : v_check) {
+            if (p.check_bounds()) {
+                if (board[p]->is_empty() || s.check_capture(p))
+                    v.push_back(p);
+            }
         }
     }
+
+    this->filter_legal_moves_under_check(s, v);
 
     return v;
 }
@@ -290,23 +332,29 @@ vector<Position> Bishop::get_legal_moves(const state::State& s) const {
     int pos_i = this->pos.i;
     int pos_j = this->pos.j;
 
-    auto pinner = this->check_pinned(s);
-    if (pinner.has_value())
-        return this->get_legal_moves_pinned(s, pinner.value());
+    if (s.in_double_check())
+        return v;
 
-    int i, j;
-    for (i = pos_i + 1, j = pos_j + 1; i < BOARD_SIZE && j < BOARD_SIZE; ++i, ++j) {
-        CHECK_EMPTY_OR_CAPTURE(i, j);
+    auto pinner = this->check_pinned(s);
+    if (pinner.has_value()) {
+        v = this->get_legal_moves_pinned(s, pinner.value());
+    } else {
+        int i, j;
+        for (i = pos_i + 1, j = pos_j + 1; i < BOARD_SIZE && j < BOARD_SIZE; ++i, ++j) {
+            CHECK_EMPTY_OR_CAPTURE(i, j);
+        }
+        for (i = pos_i + 1, j = pos_j - 1; i < BOARD_SIZE && j >= 0; ++i, --j) {
+            CHECK_EMPTY_OR_CAPTURE(i, j);
+        }
+        for (i = pos_i - 1, j = pos_j + 1; i >= 0 && j < BOARD_SIZE; --i, ++j) {
+            CHECK_EMPTY_OR_CAPTURE(i, j);
+        }
+        for (i = pos_i - 1, j = pos_j - 1; i >= 0 && j >= 0; --i, --j) {
+            CHECK_EMPTY_OR_CAPTURE(i, j);
+        }
     }
-    for (i = pos_i + 1, j = pos_j - 1; i < BOARD_SIZE && j >= 0; ++i, --j) {
-        CHECK_EMPTY_OR_CAPTURE(i, j);
-    }
-    for (i = pos_i - 1, j = pos_j + 1; i >= 0 && j < BOARD_SIZE; --i, ++j) {
-        CHECK_EMPTY_OR_CAPTURE(i, j);
-    }
-    for (i = pos_i - 1, j = pos_j - 1; i >= 0 && j >= 0; --i, --j) {
-        CHECK_EMPTY_OR_CAPTURE(i, j);
-    }
+
+    this->filter_legal_moves_under_check(s, v);
 
     return v;
 }
@@ -328,13 +376,21 @@ vector<Position> Queen::get_legal_moves(const state::State& s) const {
     Rook rook(this->player, this->pos);
     Bishop bishop(this->player, this->pos);
 
-    auto pinner = this->check_pinned(s);
-    if (pinner.has_value())
-        return this->get_legal_moves_pinned(s, pinner.value());
+    if (s.in_double_check())
+        return v;
 
-    v = rook.get_legal_moves(s);
-    vector<Position> v_bishop = bishop.get_legal_moves(s);
-    v.insert(v.end(), v_bishop.begin(), v_bishop.end());
+    auto pinner = this->check_pinned(s);
+    if (pinner.has_value()) {
+        v = this->get_legal_moves_pinned(s, pinner.value());
+
+        // No need to filter at the end: it is already done by Rook::get_legal_moves and Bishop::get_legal_moves
+        this->filter_legal_moves_under_check(s, v);
+    } else {
+        v = rook.get_legal_moves(s);
+        vector<Position> v_bishop = bishop.get_legal_moves(s);
+        v.insert(v.end(), v_bishop.begin(), v_bishop.end());
+    }
+
     return v;
 }
 

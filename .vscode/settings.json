@@ -45,6 +45,8 @@
         "memory_resource": "cpp",
         "numeric": "cpp",
         "random": "cpp",
-        "cinttypes": "cpp"
+        "cinttypes": "cpp",
+        "set": "cpp",
+        "unordered_set": "cpp"
     }
 }

@@ -5,6 +5,7 @@
 #include <optional>
 #include <memory>
 #include <algorithm>
+#include <unordered_set>
 #include "types.h"
 
 namespace state {
@@ -23,7 +24,6 @@ namespace piece {
             Piece();
             Piece(Player p, Position pos);
             virtual std::vector<Position> get_legal_moves(const state::State& s) const = 0;
-            virtual std::vector<Position> get_legal_moves_pinned(const state::State& s, const Piece* pinner) const;
             virtual piecetype::Piece get_type() const = 0;
             std::string get_symbol() const;
             Position get_pos() const;
@@ -34,6 +34,10 @@ namespace piece {
             std::optional<const Piece*> check_pinned(const state::State& s) const; // Returns the pinner if the piece is pinned
 
             static std::unique_ptr<Piece> get_piece_by_type(piecetype::Piece typ, Player p, Position pos);
+
+        protected:
+            virtual std::vector<Position> get_legal_moves_pinned(const state::State& s, const Piece* pinner) const;
+            virtual void filter_legal_moves_under_check(const state::State& s, std::vector<Position>& moves) const;
     };
 
     class Empty: public Piece {
@@ -49,6 +53,7 @@ namespace piece {
             Pawn(Player p, Position pos);
             piecetype::Piece get_type() const;
             std::vector<Position> get_legal_moves(const state::State& s) const;
+        protected:
             std::vector<Position> get_legal_moves_pinned(const state::State& s, const Piece* pinner) const override;
     };
 
