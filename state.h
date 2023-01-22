@@ -25,6 +25,8 @@ namespace state {
     };
 
     class State {
+        friend class piece::King;
+
         Board board;
         std::vector<std::pair<const piece::Piece*, const piece::Piece*>> pinned_pieces; // (pinner, pinned)
         std::vector<const piece::Piece*> checking_pieces;

@@ -138,7 +138,7 @@ piecetype::Piece Pawn::get_type() const {
 
 vector<Position> Pawn::get_legal_moves(const state::State& s) const {
     vector<Position> v;
-    state::Board board = s.get_board();
+    const state::Board& board = s.get_board();
     int i = this->pos.i;
     int j = this->pos.j;
 
@@ -183,7 +183,7 @@ vector<Position> Pawn::get_legal_moves(const state::State& s) const {
 
 vector<Position> Pawn::get_legal_moves_pinned(const state::State& s, const Piece* pinner) const {
     vector<Position> v;
-    state::Board board = s.get_board();
+    const state::Board& board = s.get_board();
     int i = this->pos.i;
     int j = this->pos.j;
 
@@ -240,7 +240,7 @@ piecetype::Piece Rook::get_type() const {
 
 vector<Position> Rook::get_legal_moves(const state::State& s) const {
     vector<Position> v;
-    state::Board board = s.get_board();
+    const state::Board& board = s.get_board();
     int pos_i = this->pos.i;
     int pos_j = this->pos.j;
 
@@ -284,7 +284,7 @@ piecetype::Piece Knight::get_type() const {
 
 vector<Position> Knight::get_legal_moves(const state::State& s) const {
     vector<Position> v;
-    state::Board board = s.get_board();
+    const state::Board& board = s.get_board();
     int i = this->pos.i;
     int j = this->pos.j;
 
@@ -328,7 +328,7 @@ piecetype::Piece Bishop::get_type() const {
 
 vector<Position> Bishop::get_legal_moves(const state::State& s) const {
     vector<Position> v;
-    state::Board board = s.get_board();
+    const state::Board& board = s.get_board();
     int pos_i = this->pos.i;
     int pos_j = this->pos.j;
 
@@ -409,21 +409,35 @@ piecetype::Piece King::get_type() const {
 vector<Position> King::get_legal_moves(const state::State& s) const {
     vector<Position> v;
     Player curr_player = s.get_turn();
-    state::Board board = s.get_board();
     int i = this->pos.i;
     int j = this->pos.j;
+
+    /* 
+        Edge case: what if the square is not attacked right now,
+        but will be in the next turn? This happens if the king is currently between
+        that square and the attacking piece (i.e. the square is covered by the king itself). 
+
+        Therefore: "remove" the king from the board before computing attacked squares.
+    */
+    state::State& state_temp = const_cast<state::State&>(s);
+    Piece* king_ptr = state_temp.board[pos];
+    state_temp.add_empty(pos);
 
     for (Position p : this->get_moves_unrestricted(s)) {
         if (!s.is_square_attacked(p, curr_player))
             v.push_back(p);
     }
 
+    /* Put the king back. The board won't be modified in the end, keeping the const guarantee. */
+    state_temp.remove_piece(pos);
+    state_temp.board[pos] = king_ptr;
+
     /* Castle */
     if (this->first_move && !s.in_check()) {
         /* Queen rook, King rook */
         for (Position rook_pos : {Position{i, j-4}, Position{i, j+3}}) {
             if (rook_pos.check_bounds()) {
-                Piece* rook = board[rook_pos];
+                Piece* rook = s.get_board()[rook_pos];
                 if (rook->is_first_move() && 
                     rook->get_player() == curr_player && 
                     rook->get_type() == piecetype::Rook) {
@@ -448,7 +462,7 @@ vector<Position> King::get_legal_moves(const state::State& s) const {
 
 std::vector<Position> King::get_moves_unrestricted(const state::State& s) const {
     vector<Position> v;
-    state::Board board = s.get_board();
+    const state::Board& board = s.get_board();
     int i = this->pos.i;
     int j = this->pos.j;
 
