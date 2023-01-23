@@ -48,40 +48,43 @@ optional<const Piece*> Piece::check_pinned(const state::State& s) const {
     return ret;
 }
 
-vector<Position> Piece::get_legal_moves_pinned(const state::State& s, const Piece* pinner) const {
-    vector<Position> v;
+vector<Move> Piece::get_legal_moves_pinned(const state::State& s, const Piece* pinner) const {
+    vector<Move> v;
+    Position from = this->get_pos();
 
     if (this->get_type() == piecetype::Queen || 
-    this->get_pos().is_diagonal_to(pinner->get_pos()) && this->get_type() == piecetype::Bishop ||
-    this->get_pos().is_orthogonal_to(pinner->get_pos()) && this->get_type() == piecetype::Rook
+    from.is_diagonal_to(pinner->get_pos()) && this->get_type() == piecetype::Bishop ||
+    from.is_orthogonal_to(pinner->get_pos()) && this->get_type() == piecetype::Rook
     ) 
     {
-        v = this->get_pos().range(pinner->get_pos());
-        v.push_back(pinner->get_pos()); // Capture
+        for (auto to : from.range(pinner->get_pos()))
+            v.push_back(Move(from, to));
+        v.push_back(Move(from, pinner->get_pos(), true)); // Capture
     }
 
     return v;
 }
 
-void Piece::filter_legal_moves_under_check(const state::State& s, vector<Position>& moves) const {
-    if (!s.in_check() || s.in_double_check())
+void Piece::filter_legal_moves_under_check(const state::State& s, vector<Move>& moves) const {
+    if (!s.in_check() || s.in_double_check() || moves.empty())
         return;
     
+    Position from = moves[0].from;
     Position checker_pos = s.get_checking_pieces()[0]->get_pos();
-    unordered_set<Position, PositionHash> potential_moves;
+    unordered_set<Move, MoveHash> potential_moves;
     
     // Capturing the checking piece
-    potential_moves.insert(checker_pos);
+    potential_moves.insert(Move(from, checker_pos));
 
     // Blocking the check
     if (s.in_blockable_check()) {
-        for (Position blocking_move: checker_pos.range(s.get_king()->get_pos()))
-            potential_moves.insert(blocking_move);
+        for (Position blocking_pos: checker_pos.range(s.get_king()->get_pos()))
+            potential_moves.insert(Move(from, blocking_pos));
     }
 
     // Take the intersection between moves and potential_moves
     moves.erase(
-        remove_if(moves.begin(), moves.end(), [&](Position m) {
+        remove_if(moves.begin(), moves.end(), [&](Move m) {
             return potential_moves.find(m) == potential_moves.end();
         }),
         moves.end()
@@ -119,8 +122,8 @@ piecetype::Piece Empty::get_type() const {
     return piecetype::Empty;
 }
 
-vector<Position> Empty::get_legal_moves(const state::State& s) const {
-    vector<Position> v;
+vector<Move> Empty::get_legal_moves(const state::State& s) const {
+    vector<Move> v;
     return v;
 }
 
@@ -136,11 +139,12 @@ piecetype::Piece Pawn::get_type() const {
     return piecetype::Pawn;
 }
 
-vector<Position> Pawn::get_legal_moves(const state::State& s) const {
-    vector<Position> v;
+vector<Move> Pawn::get_legal_moves(const state::State& s) const {
+    vector<Move> v;
     const state::Board& board = s.get_board();
-    int i = this->pos.i;
-    int j = this->pos.j;
+    Position from = this->get_pos();
+    int i = this->get_pos().i;
+    int j = this->get_pos().j;
 
     if (s.in_double_check())
         return v;
@@ -152,27 +156,27 @@ vector<Position> Pawn::get_legal_moves(const state::State& s) const {
         if (this->player == White) {
             // Move
             if (board(i - 1, j)->is_empty())
-                v.push_back({i - 1, j});
+                v.push_back(Move(from, {i - 1, j}));
             if (this->first_move && board(i - 2, j)->is_empty())
-                v.push_back({i - 2, j});
+                v.push_back(Move(from, {i - 2, j}));
 
             // Capture
             if (s.check_capture({i - 1, j - 1}))
-                v.push_back({i - 1, j - 1});
+                v.push_back(Move(from, {i - 1, j - 1}, true));
             if (s.check_capture({i - 1, j + 1}))
-                v.push_back({i - 1, j + 1});
+                v.push_back(Move(from, {i - 1, j + 1}, true));
         } else if (this->player == Black) {
             // Move
             if (board(i + 1,j)->is_empty())
-                v.push_back({i + 1, j});
+                v.push_back(Move(from, {i + 1, j}));
             if (this->first_move && board(i + 2, j)->is_empty())
-                v.push_back({i + 2, j});
+                v.push_back(Move(from, {i + 2, j}));
 
             // Capture
             if (s.check_capture({i + 1, j - 1}))
-                v.push_back({i + 1, j - 1});
+                v.push_back(Move(from, {i + 1, j - 1}, true));
             if (s.check_capture({i + 1, j + 1}))
-                v.push_back({i + 1, j + 1});
+                v.push_back(Move(from, {i + 1, j + 1}, true));
         }
     }
 
@@ -181,36 +185,37 @@ vector<Position> Pawn::get_legal_moves(const state::State& s) const {
     return v;
 }
 
-vector<Position> Pawn::get_legal_moves_pinned(const state::State& s, const Piece* pinner) const {
-    vector<Position> v;
+vector<Move> Pawn::get_legal_moves_pinned(const state::State& s, const Piece* pinner) const {
+    vector<Move> v;
     const state::Board& board = s.get_board();
-    int i = this->pos.i;
-    int j = this->pos.j;
+    Position from = this->get_pos();
+    int i = this->get_pos().i;
+    int j = this->get_pos().j;
 
     if (this->player == White) {
         // Move
         if (this->get_pos().is_orthogonal_to(pinner->get_pos())) {
             if (board(i - 1, j)->is_empty())
-                v.push_back({i - 1, j});
+                v.push_back(Move(from, {i - 1, j}));
             if (this->first_move && board(i - 2, j)->is_empty())
-                v.push_back({i - 2, j});
+                v.push_back(Move(from, {i - 2, j}));
         }
 
         // Capture
         if (pinner->get_pos() == Position{i - 1, j - 1} || pinner->get_pos() == Position{i - 1, j + 1})
-            v.push_back(pinner->get_pos());
+            v.push_back(Move(from, pinner->get_pos(), true));
     } else if (this->player == Black) {
         // Move
         if (this->get_pos().is_orthogonal_to(pinner->get_pos())) {
             if (board(i + 1,j)->is_empty())
-                v.push_back({i + 1, j});
+                v.push_back(Move(from, {i + 1, j}));
             if (this->first_move && board(i + 2, j)->is_empty())
-            v.push_back({i + 2, j});
+            v.push_back(Move(from, {i + 2, j}));
         }
 
         // Capture
         if (pinner->get_pos() == Position{i + 1, j - 1} || pinner->get_pos() == Position{i + 1, j + 1})
-            v.push_back(pinner->get_pos());
+            v.push_back(Move(from, pinner->get_pos(), true));
     }
 
     return v;    
@@ -230,19 +235,20 @@ piecetype::Piece Rook::get_type() const {
 
 #define CHECK_EMPTY_OR_CAPTURE(i, j) { \
     if (board(i, j)->is_empty()) { \
-        v.push_back({i, j}); \
+        v.push_back(Move(from, {i, j})); \
     } else { \
         if (s.check_capture({i, j})) \
-            v.push_back({i, j}); \
+            v.push_back(Move(from, {i, j}, true)); \
         break; \
     } \
 } \
 
-vector<Position> Rook::get_legal_moves(const state::State& s) const {
-    vector<Position> v;
+vector<Move> Rook::get_legal_moves(const state::State& s) const {
+    vector<Move> v;
     const state::Board& board = s.get_board();
-    int pos_i = this->pos.i;
-    int pos_j = this->pos.j;
+    Position from = this->get_pos();
+    int pos_i = this->get_pos().i;
+    int pos_j = this->get_pos().j;
 
     if (s.in_double_check())
         return v;
@@ -282,11 +288,12 @@ piecetype::Piece Knight::get_type() const {
     return piecetype::Knight;
 }
 
-vector<Position> Knight::get_legal_moves(const state::State& s) const {
-    vector<Position> v;
+vector<Move> Knight::get_legal_moves(const state::State& s) const {
+    vector<Move> v;
     const state::Board& board = s.get_board();
-    int i = this->pos.i;
-    int j = this->pos.j;
+    Position from = this->get_pos();
+    int i = this->get_pos().i;
+    int j = this->get_pos().j;
 
     if (s.in_double_check())
         return v;
@@ -301,10 +308,12 @@ vector<Position> Knight::get_legal_moves(const state::State& s) const {
             {i-1, j+2}, {i-2, j+1},
             {i+1, j-2}, {i+2, j-1},
         };
-        for (Position p : v_check) {
-            if (p.check_bounds()) {
-                if (board[p]->is_empty() || s.check_capture(p))
-                    v.push_back(p);
+        for (Position to : v_check) {
+            if (to.check_bounds()) {
+                if (board[to]->is_empty())
+                    v.push_back(Move(from, to));
+                else if (s.check_capture(to))
+                    v.push_back(Move(from, to, true));
             }
         }
     }
@@ -326,11 +335,12 @@ piecetype::Piece Bishop::get_type() const {
     return piecetype::Bishop;
 }
 
-vector<Position> Bishop::get_legal_moves(const state::State& s) const {
-    vector<Position> v;
+vector<Move> Bishop::get_legal_moves(const state::State& s) const {
+    vector<Move> v;
     const state::Board& board = s.get_board();
-    int pos_i = this->pos.i;
-    int pos_j = this->pos.j;
+    Position from = this->get_pos();
+    int pos_i = this->get_pos().i;
+    int pos_j = this->get_pos().j;
 
     if (s.in_double_check())
         return v;
@@ -371,8 +381,8 @@ piecetype::Piece Queen::get_type() const {
     return piecetype::Queen;
 }
 
-vector<Position> Queen::get_legal_moves(const state::State& s) const {
-    vector<Position> v;
+vector<Move> Queen::get_legal_moves(const state::State& s) const {
+    vector<Move> v;
     Rook rook(this->player, this->pos);
     Bishop bishop(this->player, this->pos);
 
@@ -387,7 +397,7 @@ vector<Position> Queen::get_legal_moves(const state::State& s) const {
         this->filter_legal_moves_under_check(s, v);
     } else {
         v = rook.get_legal_moves(s);
-        vector<Position> v_bishop = bishop.get_legal_moves(s);
+        vector<Move> v_bishop = bishop.get_legal_moves(s);
         v.insert(v.end(), v_bishop.begin(), v_bishop.end());
     }
 
@@ -406,11 +416,12 @@ piecetype::Piece King::get_type() const {
     return piecetype::King;
 }
 
-vector<Position> King::get_legal_moves(const state::State& s) const {
-    vector<Position> v;
+vector<Move> King::get_legal_moves(const state::State& s) const {
+    vector<Move> v;
     Player curr_player = s.get_turn();
-    int i = this->pos.i;
-    int j = this->pos.j;
+    Position from = this->get_pos();
+    int i = this->get_pos().i;
+    int j = this->get_pos().j;
 
     /* 
         Edge case: what if the square is not attacked right now,
@@ -423,9 +434,9 @@ vector<Position> King::get_legal_moves(const state::State& s) const {
     Piece* king_ptr = state_temp.board[pos];
     state_temp.add_empty(pos);
 
-    for (Position p : this->get_moves_unrestricted(s)) {
-        if (!s.is_square_attacked(p, curr_player))
-            v.push_back(p);
+    for (auto move : this->get_moves_unrestricted(s)) {
+        if (!s.is_square_attacked(move.to, curr_player))
+            v.push_back(move);
     }
 
     /* Put the king back. The board won't be modified in the end, keeping the const guarantee. */
@@ -442,15 +453,19 @@ vector<Position> King::get_legal_moves(const state::State& s) const {
                     rook->get_player() == curr_player && 
                     rook->get_type() == piecetype::Rook) {
 
+                    /* "Is it the queen rook?" */
                     Position new_king_pos = rook_pos.j < j ? Position{i, j-2} : Position{i, j+2};
                     Position new_king_pos_bound = rook_pos.j < j ? Position{i, j-3} : Position{i, j+3};
+                    Position new_rook_pos = rook_pos.j < j ? Position{i, j-1} : Position{i, j+1};
 
                     /* All squares the King passes through must not be under attack */
                     vector<Position> v_check = this->get_pos().range(new_king_pos_bound);
                     if (all_of(v_check.begin(), v_check.end(), [&](Position p) {
                         return !s.is_square_attacked(p, curr_player);
                     })) {
-                        v.push_back(new_king_pos);
+                        Move move(from, new_king_pos);
+                        move.add_castle(rook_pos, new_rook_pos);
+                        v.push_back(move);
                     }
                 }
             }
@@ -460,20 +475,25 @@ vector<Position> King::get_legal_moves(const state::State& s) const {
     return v;
 }
 
-std::vector<Position> King::get_moves_unrestricted(const state::State& s) const {
-    vector<Position> v;
+std::vector<Move> King::get_moves_unrestricted(const state::State& s) const {
+    vector<Move> v;
     const state::Board& board = s.get_board();
-    int i = this->pos.i;
-    int j = this->pos.j;
+    Position from = this->get_pos();
+    int i = this->get_pos().i;
+    int j = this->get_pos().j;
 
     vector<Position> v_check {
         {i, j+1}, {i, j-1}, {i+1, j}, {i-1, j},
         {i+1, j+1}, {i-1, j-1}, {i+1, j-1}, {i-1, j+1}
     };
 
-    for (Position p : v_check) {
-        if (p.check_bounds() && (board[p]->is_empty() || s.check_capture(p)))
-            v.push_back(p);
+    for (Position to : v_check) {
+        if (to.check_bounds()) {
+            if (board[to]->is_empty())
+                v.push_back(Move(from, to));
+            else if (s.check_capture(to))
+                v.push_back(Move(from, to, true));
+        }
     }
 
     return v;

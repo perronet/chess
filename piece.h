@@ -23,7 +23,7 @@ namespace piece {
         public:
             Piece();
             Piece(Player p, Position pos);
-            virtual std::vector<Position> get_legal_moves(const state::State& s) const = 0;
+            virtual std::vector<Move> get_legal_moves(const state::State& s) const = 0;
             virtual piecetype::Piece get_type() const = 0;
             std::string get_symbol() const;
             Position get_pos() const;
@@ -36,8 +36,8 @@ namespace piece {
             static std::unique_ptr<Piece> get_piece_by_type(piecetype::Piece typ, Player p, Position pos);
 
         protected:
-            virtual std::vector<Position> get_legal_moves_pinned(const state::State& s, const Piece* pinner) const;
-            virtual void filter_legal_moves_under_check(const state::State& s, std::vector<Position>& moves) const;
+            virtual std::vector<Move> get_legal_moves_pinned(const state::State& s, const Piece* pinner) const;
+            virtual void filter_legal_moves_under_check(const state::State& s, std::vector<Move>& moves) const;
     };
 
     class Empty: public Piece {
@@ -45,44 +45,44 @@ namespace piece {
             Empty();
             Empty(Player p, Position pos);
             piecetype::Piece get_type() const;
-            std::vector<Position> get_legal_moves(const state::State& s) const;
+            std::vector<Move> get_legal_moves(const state::State& s) const;
     };
 
     class Pawn: public Piece {
         public:
             Pawn(Player p, Position pos);
             piecetype::Piece get_type() const;
-            std::vector<Position> get_legal_moves(const state::State& s) const;
+            std::vector<Move> get_legal_moves(const state::State& s) const;
         protected:
-            std::vector<Position> get_legal_moves_pinned(const state::State& s, const Piece* pinner) const override;
+            std::vector<Move> get_legal_moves_pinned(const state::State& s, const Piece* pinner) const override;
     };
 
     class Rook: public Piece {
         public:
             Rook(Player p, Position pos);
             piecetype::Piece get_type() const;
-            std::vector<Position> get_legal_moves(const state::State& s) const;
+            std::vector<Move> get_legal_moves(const state::State& s) const;
     };
 
     class Knight: public Piece {
         public:
             Knight(Player p, Position pos);
             piecetype::Piece get_type() const;
-            std::vector<Position> get_legal_moves(const state::State& s) const;
+            std::vector<Move> get_legal_moves(const state::State& s) const;
     };
 
     class Bishop: public Piece {
         public:
             Bishop(Player p, Position pos);
             piecetype::Piece get_type() const;
-            std::vector<Position> get_legal_moves(const state::State& s) const;
+            std::vector<Move> get_legal_moves(const state::State& s) const;
     };
 
     class Queen: public Piece {
         public:
             Queen(Player p, Position pos);
             piecetype::Piece get_type() const;
-            std::vector<Position> get_legal_moves(const state::State& s) const;
+            std::vector<Move> get_legal_moves(const state::State& s) const;
     };
 
     class King: public Piece {
@@ -91,10 +91,10 @@ namespace piece {
         public:
             King(Player p, Position pos);
             piecetype::Piece get_type() const;
-            std::vector<Position> get_legal_moves(const state::State& s) const;
+            std::vector<Move> get_legal_moves(const state::State& s) const;
 
         private:
             /* King moves without accounting for squares under attack. Some of these moves might be illegal. */
-            std::vector<Position> get_moves_unrestricted(const state::State& s) const;
+            std::vector<Move> get_moves_unrestricted(const state::State& s) const;
     };
 }

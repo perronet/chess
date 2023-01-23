@@ -16,12 +16,8 @@ struct Position {
     int i;
     int j;
 
-    bool operator==(const Position& rhs) const { 
-        return i == rhs.i && j == rhs.j; 
-    }
-
-    bool operator!=(const Position& rhs) const { 
-        return !(*this == rhs); 
+    bool operator==(const Position& other) const { 
+        return this->i == other.i && this->j == other.j; 
     }
 
     std::string to_string() const {
@@ -71,8 +67,34 @@ struct Position {
     }
 };
 
-struct PositionHash {
-    size_t operator()(const Position& pos) const {
-        return pos.i ^ pos.j;
+struct Move {
+    Position from;
+    Position to;
+    bool is_capture;
+    bool is_castle = false;
+    Position castle_rook_from = {-1, -1};
+    Position castle_rook_to = {-1, -1};
+
+    public:
+        Move(Position from, Position to, bool is_capture = false) {
+            this->from = from;
+            this->to = to;
+            this->is_capture = is_capture;
+        }
+        
+        void add_castle(Position rook_from, Position rook_to) {
+            this->castle_rook_from = rook_from;
+            this->castle_rook_to = rook_to;
+            this->is_castle = true;
+        }
+
+        bool operator==(const Move& other) const {
+            return this->from == other.from && this->to == other.to;
+        }
+};
+
+struct MoveHash {
+    size_t operator()(const Move& move) const {
+        return move.to.i ^ move.to.j;
     }
 };

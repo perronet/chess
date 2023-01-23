@@ -70,17 +70,12 @@ bool State::move(Position from, Position to) {
         return false;
     }
 
-    vector<Position> moves = board[from]->get_legal_moves(*this);
-    for (auto m : moves) {
-        if (m == to) {
+    vector<Move> moves = board[from]->get_legal_moves(*this);
+    for (auto move : moves) {
+        if (move.from == from && move.to == to) {
             // Is it a castling move? Then move the corresponding rook first
-            if (this->is_castling_move(from, to)) {
-                auto rook_move = this->get_castling_rook_move(from, to);
-                if (!rook_move.has_value())
-                    return false;
-                
-                this->move_piece(rook_move.value().first, rook_move.value().second);
-            }
+            if (move.is_castle)
+                this->move_piece(move.castle_rook_from, move.castle_rook_to);
 
             // Move the piece
             this->move_piece(from, to);
@@ -93,15 +88,15 @@ bool State::move(Position from, Position to) {
             // Update checking list (check from the piece that just moved: Knight, Pawn)
             Piece* moved_piece = board[to];
             if (moved_piece->get_type() == piecetype::Knight || moved_piece->get_type() == piecetype::Pawn) {
-                vector<Position> next_moves = moved_piece->get_legal_moves(*this);
-                if (find_if(next_moves.begin(), next_moves.end(), [this](auto pos){ 
-                    return board[pos]->get_type() == piecetype::King && board[pos]->get_player() == !this->get_turn();
+                vector<Move> next_moves = moved_piece->get_legal_moves(*this);
+                if (find_if(next_moves.begin(), next_moves.end(), [this](auto move){ 
+                    return board[move.to]->get_type() == piecetype::King && board[move.to]->get_player() == !this->get_turn();
                 }) < next_moves.end()) {
                     this->checking_pieces.push_back(moved_piece);
                 }
             }
 
-            /* King under check after moving = there is a bug. */
+            // King under check after moving = there is a bug
             assert(!is_square_attacked(this->get_king()->get_pos(), this->get_turn()));
 
             this->turn = (Player)!this->get_turn();
@@ -214,7 +209,7 @@ bool State::in_stalemate() const {
 */
 bool State::is_square_attacked(Position pos, Player p) const {
     Player opponent = (Player)!p;
-    vector<Position> moves;
+    vector<Move> moves;
     
     for (int typ = 0; typ != piecetype::Empty; typ++) {
         /* 
@@ -229,8 +224,8 @@ bool State::is_square_attacked(Position pos, Player p) const {
             moves = piece->get_legal_moves(*this);
         }
 
-        if (find_if(moves.begin(), moves.end(), [&](Position move){
-            Piece* attacked_piece = this->get_board()[move];
+        if (find_if(moves.begin(), moves.end(), [&](Move move){
+            Piece* attacked_piece = this->get_board()[move.to];
             return attacked_piece->get_player() == opponent && attacked_piece->get_type() == typ;
         }) < moves.end()) {
             return true;
@@ -388,29 +383,4 @@ void State::move_piece(Position from, Position to) {
 bool State::check_capture(Position pos) const {
     return pos.check_bounds() &&
     board[pos]->get_player() == !this->get_turn();
-}
-
-/* Assumes move is legal */
-bool State::is_castling_move(Position king_from, Position king_to) const {
-    return board[king_from]->get_type() == piecetype::King && king_from.range(king_to).size() == 1;
-}
-
-/* Assumes move is legal */
-optional<pair<Position, Position>> State::get_castling_rook_move(Position king_from, Position king_to) const {
-    if (this->is_castling_move(king_from, king_to)) {
-        Position queen_rook = Position{king_to.i, king_to.j-2};
-        Position king_rook = Position{king_from.i, king_to.j+1};
-
-        if (queen_rook.check_bounds() &&
-            board[queen_rook]->get_type() == piecetype::Rook && 
-            board[queen_rook]->get_player() == this->get_turn())
-            return make_pair(queen_rook, Position{king_to.i, king_to.j+1}); // Rook to the right
-
-        if (king_rook.check_bounds() &&
-            board[king_rook]->get_type() == piecetype::Rook && 
-            board[king_rook]->get_player() == this->get_turn())
-            return make_pair(king_rook, Position{king_to.i, king_to.j-1}); // Rook to the left
-    }
-
-    return nullopt;
 }
