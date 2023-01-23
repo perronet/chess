@@ -5,8 +5,17 @@
 #include <string>
 
 #define BOARD_SIZE 8
+#define AVG_LEGAL_MOVES 35
+#define MAX_MOVES_DRAW 50
+#define REPETION_MOVES_DRAW 3
 
 enum Player {White, Black, None};
+
+enum GameState {
+    Ongoing,
+    Checkmate, Stalemate, 
+    Draw_Maxmoves, Draw_Repetition, Draw_Deadpos,
+};
 
 namespace piecetype { // Avoid name clash with class
     enum Piece {Pawn, Rook, Knight, Bishop, Queen, King, Empty};
@@ -95,6 +104,6 @@ struct Move {
 
 struct MoveHash {
     size_t operator()(const Move& move) const {
-        return move.to.i ^ move.to.j;
+        return move.from.i ^ move.from.j ^ move.to.i ^ move.to.j;
     }
 };

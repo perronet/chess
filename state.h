@@ -3,6 +3,7 @@
 #include <vector>
 #include <array>
 #include <cassert>
+#include <unordered_map>
 #include "types.h"
 #include "piece.h"
 #include "notation.h"
@@ -16,12 +17,19 @@ namespace state {
             piece::Piece* operator()(size_t i, size_t j) const;
             piece::Piece*& operator[](Position p);
             piece::Piece* operator[](Position p) const;
+            bool operator==(const Board& other) const;
     };
 
     struct Material {
         Player player;
         std::vector<const piece::Piece*> pieces;
         const piece::King* king;
+    };
+
+    struct StateHash {
+        size_t operator()(const State& s) const {
+            return 0;
+        }
     };
 
     class State {
@@ -33,6 +41,11 @@ namespace state {
         Material white_pieces;
         Material black_pieces;
         Player turn;
+        GameState game_state;
+
+        // Data to compute draws
+        std::unordered_map<std::string, int> occurred_state_freq;
+        int draw_moves_cnt = 0;
 
         public:
             State();
@@ -41,18 +54,21 @@ namespace state {
             bool in_check() const;
             bool in_blockable_check() const;
             bool in_double_check() const;
-            bool in_checkmate() const;
-            bool in_stalemate() const;
             bool is_square_attacked(Position pos, Player p) const;
+            bool game_ended() const;
+            GameState get_game_state() const;
+            std::vector<Move> get_legal_moves() const;
             std::vector<std::pair<const piece::Piece*, const piece::Piece*>> get_pinned_pieces() const;
             std::vector<const piece::Piece*> get_checking_pieces() const;
-            void print() const;
             const Board& get_board() const;
             const Material& get_pieces(Player p) const;
             const piece::King* get_king() const;
             const piece::King* get_opponent_king() const;
             Player get_turn() const;
             bool check_capture(Position pos) const;
+            bool operator==(const State& other) const;
+            std::string to_string() const;
+            void print() const;
 
         private:
             void add_piece(Player p, piecetype::Piece piece, Position pos);
@@ -60,5 +76,6 @@ namespace state {
             void remove_piece(Position pos);
             void move_piece(Position from, Position to);
             void update_pins_and_checks();
+            void update_game_state(Move& move);
     };
 }

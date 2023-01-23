@@ -12,7 +12,7 @@ Piece::Piece(Player p, Position pos) {
     this->pos = pos;
 }
 
-string Piece::get_symbol() const {
+std::string Piece::get_symbol() const {
     return symbol;
 }
 
@@ -128,11 +128,10 @@ vector<Move> Empty::get_legal_moves(const state::State& s) const {
 }
 
 Pawn::Pawn(Player p, Position pos) : Piece::Piece(p, pos) {
-    if (p == White) {
+    if (p == White)
         symbol = "♟︎";
-    } else {
+    else
         symbol = "♙";
-    }
 }
 
 piecetype::Piece Pawn::get_type() const {
@@ -222,11 +221,10 @@ vector<Move> Pawn::get_legal_moves_pinned(const state::State& s, const Piece* pi
 }
 
 Rook::Rook(Player p, Position pos) : Piece::Piece(p, pos) {
-    if (p == White) {
+    if (p == White)
         symbol = "♜";
-    } else {
+    else
         symbol = "♖";
-    }
 }
 
 piecetype::Piece Rook::get_type() const {
@@ -277,11 +275,10 @@ vector<Move> Rook::get_legal_moves(const state::State& s) const {
 }
 
 Knight::Knight(Player p, Position pos) : Piece::Piece(p, pos) {
-    if (p == White) {
+    if (p == White)
         symbol = "♞";
-    } else {
+    else
         symbol = "♘";
-    }
 }
 
 piecetype::Piece Knight::get_type() const {
@@ -324,11 +321,10 @@ vector<Move> Knight::get_legal_moves(const state::State& s) const {
 }
 
 Bishop::Bishop(Player p, Position pos) : Piece::Piece(p, pos) {
-    if (p == White) {
+    if (p == White)
         symbol = "♝";
-    } else {
+    else
         symbol = "♗";
-    }
 }
 
 piecetype::Piece Bishop::get_type() const {
@@ -370,11 +366,10 @@ vector<Move> Bishop::get_legal_moves(const state::State& s) const {
 }
 
 Queen::Queen(Player p, Position pos) : Piece::Piece(p, pos) {
-    if (p == White) {
+    if (p == White)
         symbol = "♛";
-    } else {
+    else
         symbol = "♕";
-    }
 }
 
 piecetype::Piece Queen::get_type() const {
@@ -405,11 +400,10 @@ vector<Move> Queen::get_legal_moves(const state::State& s) const {
 }
 
 King::King(Player p, Position pos) : Piece::Piece(p, pos) {
-    if (p == White) {
+    if (p == White)
         symbol = "♚";
-    } else {
+    else
         symbol = "♔";
-    }
 }
 
 piecetype::Piece King::get_type() const {
@@ -439,7 +433,7 @@ vector<Move> King::get_legal_moves(const state::State& s) const {
             v.push_back(move);
     }
 
-    /* Put the king back. The board won't be modified in the end, keeping the const guarantee. */
+    /* Put the king back. The board won"t be modified in the end, keeping the const guarantee. */
     state_temp.remove_piece(pos);
     state_temp.board[pos] = king_ptr;
 

@@ -25,10 +25,20 @@ piece::Piece* Board::operator[](Position p) const {
     return this->operator()(p.i, p.j);
 }
 
+bool Board::operator==(const Board& other) const {
+    for (int i = 0; i < BOARD_SIZE*BOARD_SIZE; i++) {
+        if (this->data[i] != other.data[i])
+            return false;
+    }
+
+    return true;
+}
+
 State::State() {
     this->turn = White;
     this->white_pieces.player = White;
     this->black_pieces.player = Black;
+    this->game_state = Ongoing;
     for (int i = 1; i < BOARD_SIZE-1; ++i) {
         for (int j = 0; j < BOARD_SIZE; ++j) {
             if (i == 1) {
@@ -52,6 +62,12 @@ State::State() {
         for (int j = 0; j < BOARD_SIZE; ++j)
             this->add_piece(player, order[j], {row, j});
     }
+
+    this->occurred_state_freq[this->to_string()] = 1;
+}
+
+bool State::operator==(const State& other) const {
+    return this->board == other.board && this->turn == other.turn;
 }
 
 bool State::move(string move_notation) {
@@ -99,7 +115,13 @@ bool State::move(Position from, Position to) {
             // King under check after moving = there is a bug
             assert(!is_square_attacked(this->get_king()->get_pos(), this->get_turn()));
 
+            // Switch player
             this->turn = (Player)!this->get_turn();
+
+            // Update game state (i.e. checkmate, stalemate...)
+            // TODO cache legal moves for next turn
+            this->update_game_state(move);
+
             return true;
         }
     }
@@ -189,14 +211,12 @@ bool State::in_double_check() const {
     return this->checking_pieces.size() >= 2;
 }
 
-// TODO
-bool State::in_checkmate() const {
-    return false;
+bool State::game_ended() const {
+    return this->game_state != GameState::Ongoing;
 }
 
-// TODO
-bool State::in_stalemate() const {
-    return false;
+GameState State::get_game_state() const {
+    return this->game_state;
 }
 
 /*
@@ -237,27 +257,28 @@ bool State::is_square_attacked(Position pos, Player p) const {
     return false;
 }
 
+std::vector<Move> State::get_legal_moves() const {
+    vector<Move> v, v_temp;
+    v.reserve(AVG_LEGAL_MOVES);
+    const Material& material = this->get_turn() == White ? this->white_pieces : this->black_pieces;
+
+    for (auto piece : material.pieces) {
+        v_temp = piece->get_legal_moves(*this);
+        v.insert(v.end(), v_temp.begin(), v_temp.end());
+    }
+
+    v_temp = material.king->get_legal_moves(*this);
+    v.insert(v.end(), v_temp.begin(), v_temp.end());
+
+    return v;
+}
+
 vector<const piece::Piece*> State::get_checking_pieces() const {
     return this->checking_pieces;
 }
 
 vector<pair<const piece::Piece*, const piece::Piece*>> State::get_pinned_pieces() const {
     return this->pinned_pieces;
-}
-
-void State::print() const {
-    for (int i = 0; i < BOARD_SIZE; ++i) {
-        cout << notation::row_to_coord(i) << "  ";
-        for (int j = 0; j < BOARD_SIZE; ++j) {
-            cout << board(i, j)->get_symbol() << " ";
-        }
-        cout << "\n";
-    }
-    cout << "   ";
-    for (int j = 0; j < BOARD_SIZE; ++j) {
-        cout << notation::col_to_coord(j) << " ";
-    }
-    cout << "\n\n";
 }
 
 const state::Board& State::get_board() const { 
@@ -287,6 +308,36 @@ const King* State::get_opponent_king() const {
 
 Player State::get_turn() const {
     return this->turn;
+}
+
+/* The string uniquely identifies the state. */
+string State::to_string() const {
+    string s;
+    s.reserve((BOARD_SIZE*BOARD_SIZE) + 2);
+
+    for (int i = 0; i < BOARD_SIZE; i++) {
+        for (int j = 0; j < BOARD_SIZE; j++) {
+            s += this->board(i, j)->get_symbol();
+        }
+    }
+    s += this->turn == White ? 'W' : 'B';
+
+    return s;
+}
+
+void State::print() const {
+    for (int i = 0; i < BOARD_SIZE; ++i) {
+        cout << notation::row_to_coord(i) << "  ";
+        for (int j = 0; j < BOARD_SIZE; ++j) {
+            cout << board(i, j)->get_symbol() << " ";
+        }
+        cout << "\n";
+    }
+    cout << "   ";
+    for (int j = 0; j < BOARD_SIZE; ++j) {
+        cout << notation::col_to_coord(j) << " ";
+    }
+    cout << "\n\n";
 }
 
 #define CASE_PIECE_ADD(piececlass) \
@@ -383,4 +434,43 @@ void State::move_piece(Position from, Position to) {
 bool State::check_capture(Position pos) const {
     return pos.check_bounds() &&
     board[pos]->get_player() == !this->get_turn();
+}
+
+void State::update_game_state(Move& move) {
+    vector<Move> legal_moves = this->get_legal_moves(); // TODO We could easily cache the list of legal moves before next turn  
+
+    if (legal_moves.empty()) {
+        if (this->in_check())
+            this->game_state = GameState::Checkmate;
+        else
+            this->game_state = GameState::Stalemate;
+        return;
+    }
+
+    /*  TODO include dead positions
+        King vs. king
+        King and bishop vs. king
+        King and knight vs. king
+        King and bishop vs. king and bishop of the same color as the opponent's bishop
+    */
+
+    // Record the current state of the board
+    string curr_state = this->to_string();
+    if (this->occurred_state_freq.find(curr_state) == this->occurred_state_freq.end())
+        this->occurred_state_freq[curr_state] = 0;
+    this->occurred_state_freq[curr_state]++;
+
+    // Update draw counter
+    if (move.is_capture || this->board[move.to]->get_type() == piecetype::Pawn)
+        this->draw_moves_cnt = 0;
+    else
+        this->draw_moves_cnt++;
+
+    // Position has occurred too many times: draw
+    if (this->occurred_state_freq[curr_state] >= REPETION_MOVES_DRAW)
+        this->game_state = GameState::Draw_Repetition;
+    else if (draw_moves_cnt >= MAX_MOVES_DRAW)
+        this->game_state = GameState::Draw_Maxmoves;
+    else
+        this->game_state = GameState::Ongoing;
 }
