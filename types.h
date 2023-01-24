@@ -107,6 +107,10 @@ struct Move {
         bool operator==(const Move& other) const {
             return this->from == other.from && this->to == other.to;
         }
+
+        std::string to_string() {
+            return from.to_string() + " " + to.to_string();
+        }
 };
 
 struct MoveHash {

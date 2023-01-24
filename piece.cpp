@@ -95,6 +95,8 @@ std::unique_ptr<Piece> Piece::get_piece_by_type(piecetype::Piece typ, Player p, 
     switch (typ) {
         case piecetype::Pawn:
             return std::make_unique<Pawn>(p, pos);
+        case piecetype::Rook:
+            return std::make_unique<Rook>(p, pos);
         case piecetype::Knight:
             return std::make_unique<Knight>(p, pos);
         case piecetype::Bishop:
@@ -122,7 +124,7 @@ piecetype::Piece Empty::get_type() const {
     return piecetype::Empty;
 }
 
-vector<Move> Empty::get_legal_moves(const state::State& s) const {
+vector<Move> Empty::get_legal_moves(const state::State& s, bool ignore_check) const {
     vector<Move> v;
     return v;
 }
@@ -150,14 +152,14 @@ bool Pawn::check_capture_en_passant(const state::State& s, Position pos) const {
             ((Pawn*)piece)->two_squares_move == curr_move - 1;
 }
 
-vector<Move> Pawn::get_legal_moves(const state::State& s) const {
+vector<Move> Pawn::get_legal_moves(const state::State& s, bool ignore_check) const {
     vector<Move> v;
     const state::Board& board = s.get_board();
     Position from = this->get_pos();
     int i = this->get_pos().i;
     int j = this->get_pos().j;
 
-    if (s.in_double_check())
+    if (s.in_double_check() && !ignore_check)
         return v;
 
     auto pinner = this->check_pinned(s);
@@ -212,7 +214,8 @@ vector<Move> Pawn::get_legal_moves(const state::State& s) const {
         }
     }
 
-    this->filter_legal_moves_under_check(s, v);
+    if (!ignore_check)
+        this->filter_legal_moves_under_check(s, v);
 
     return v;
 }
@@ -274,14 +277,14 @@ piecetype::Piece Rook::get_type() const {
     } \
 } \
 
-vector<Move> Rook::get_legal_moves(const state::State& s) const {
+vector<Move> Rook::get_legal_moves(const state::State& s, bool ignore_check) const {
     vector<Move> v;
     const state::Board& board = s.get_board();
     Position from = this->get_pos();
     int pos_i = this->get_pos().i;
     int pos_j = this->get_pos().j;
 
-    if (s.in_double_check())
+    if (s.in_double_check() && !ignore_check)
         return v;
 
     auto pinner = this->check_pinned(s);
@@ -302,7 +305,8 @@ vector<Move> Rook::get_legal_moves(const state::State& s) const {
         }
     }
 
-    this->filter_legal_moves_under_check(s, v);
+    if (!ignore_check)
+        this->filter_legal_moves_under_check(s, v);
 
     return v;
 }
@@ -318,14 +322,14 @@ piecetype::Piece Knight::get_type() const {
     return piecetype::Knight;
 }
 
-vector<Move> Knight::get_legal_moves(const state::State& s) const {
+vector<Move> Knight::get_legal_moves(const state::State& s, bool ignore_check) const {
     vector<Move> v;
     const state::Board& board = s.get_board();
     Position from = this->get_pos();
     int i = this->get_pos().i;
     int j = this->get_pos().j;
 
-    if (s.in_double_check())
+    if (s.in_double_check() && !ignore_check)
         return v;
 
     auto pinner = this->check_pinned(s);
@@ -348,7 +352,8 @@ vector<Move> Knight::get_legal_moves(const state::State& s) const {
         }
     }
 
-    this->filter_legal_moves_under_check(s, v);
+    if (!ignore_check)
+        this->filter_legal_moves_under_check(s, v);
 
     return v;
 }
@@ -364,14 +369,14 @@ piecetype::Piece Bishop::get_type() const {
     return piecetype::Bishop;
 }
 
-vector<Move> Bishop::get_legal_moves(const state::State& s) const {
+vector<Move> Bishop::get_legal_moves(const state::State& s, bool ignore_check) const {
     vector<Move> v;
     const state::Board& board = s.get_board();
     Position from = this->get_pos();
     int pos_i = this->get_pos().i;
     int pos_j = this->get_pos().j;
 
-    if (s.in_double_check())
+    if (s.in_double_check() && !ignore_check)
         return v;
 
     auto pinner = this->check_pinned(s);
@@ -393,7 +398,8 @@ vector<Move> Bishop::get_legal_moves(const state::State& s) const {
         }
     }
 
-    this->filter_legal_moves_under_check(s, v);
+    if (!ignore_check)
+        this->filter_legal_moves_under_check(s, v);
 
     return v;
 }
@@ -409,12 +415,12 @@ piecetype::Piece Queen::get_type() const {
     return piecetype::Queen;
 }
 
-vector<Move> Queen::get_legal_moves(const state::State& s) const {
+vector<Move> Queen::get_legal_moves(const state::State& s, bool ignore_check) const {
     vector<Move> v;
     Rook rook(this->player, this->pos);
     Bishop bishop(this->player, this->pos);
 
-    if (s.in_double_check())
+    if (s.in_double_check() && !ignore_check)
         return v;
 
     auto pinner = this->check_pinned(s);
@@ -422,7 +428,8 @@ vector<Move> Queen::get_legal_moves(const state::State& s) const {
         v = this->get_legal_moves_pinned(s, pinner.value());
 
         // No need to filter at the end: it is already done by Rook::get_legal_moves and Bishop::get_legal_moves
-        this->filter_legal_moves_under_check(s, v);
+        if (!ignore_check)
+            this->filter_legal_moves_under_check(s, v);
     } else {
         v = rook.get_legal_moves(s);
         vector<Move> v_bishop = bishop.get_legal_moves(s);
@@ -443,7 +450,7 @@ piecetype::Piece King::get_type() const {
     return piecetype::King;
 }
 
-vector<Move> King::get_legal_moves(const state::State& s) const {
+vector<Move> King::get_legal_moves(const state::State& s, bool ignore_check) const {
     vector<Move> v;
     Player curr_player = s.get_turn();
     Position from = this->get_pos();

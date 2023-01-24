@@ -256,7 +256,7 @@ bool State::is_square_attacked(Position pos, Player p) const {
             moves = king.get_moves_unrestricted(*this);
         } else {
             auto piece = Piece::get_piece_by_type((piecetype::Piece)typ, p, pos);
-            moves = piece->get_legal_moves(*this);
+            moves = piece->get_legal_moves(*this, true); // Ignore if the current player is under check
         }
 
         if (find_if(moves.begin(), moves.end(), [&](Move move){

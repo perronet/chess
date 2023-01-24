@@ -23,7 +23,7 @@ namespace piece {
         public:
             Piece();
             Piece(Player p, Position pos);
-            virtual std::vector<Move> get_legal_moves(const state::State& s) const = 0;
+            virtual std::vector<Move> get_legal_moves(const state::State& s, bool ignore_check = false) const = 0;
             virtual piecetype::Piece get_type() const = 0;
             std::string get_symbol() const;
             Position get_pos() const;
@@ -45,7 +45,7 @@ namespace piece {
             Empty();
             Empty(Player p, Position pos);
             piecetype::Piece get_type() const;
-            std::vector<Move> get_legal_moves(const state::State& s) const;
+            std::vector<Move> get_legal_moves(const state::State& s, bool ignore_check = false) const;
     };
 
     class Pawn: public Piece {
@@ -55,7 +55,7 @@ namespace piece {
         public:
             Pawn(Player p, Position pos);
             piecetype::Piece get_type() const;
-            std::vector<Move> get_legal_moves(const state::State& s) const;
+            std::vector<Move> get_legal_moves(const state::State& s, bool ignore_check = false) const;
             void set_two_squares_move(int move_num);
             bool check_capture_en_passant(const state::State& s, Position pos) const;
         protected:
@@ -66,28 +66,28 @@ namespace piece {
         public:
             Rook(Player p, Position pos);
             piecetype::Piece get_type() const;
-            std::vector<Move> get_legal_moves(const state::State& s) const;
+            std::vector<Move> get_legal_moves(const state::State& s, bool ignore_check = false) const;
     };
 
     class Knight: public Piece {
         public:
             Knight(Player p, Position pos);
             piecetype::Piece get_type() const;
-            std::vector<Move> get_legal_moves(const state::State& s) const;
+            std::vector<Move> get_legal_moves(const state::State& s, bool ignore_check = false) const;
     };
 
     class Bishop: public Piece {
         public:
             Bishop(Player p, Position pos);
             piecetype::Piece get_type() const;
-            std::vector<Move> get_legal_moves(const state::State& s) const;
+            std::vector<Move> get_legal_moves(const state::State& s, bool ignore_check = false) const;
     };
 
     class Queen: public Piece {
         public:
             Queen(Player p, Position pos);
             piecetype::Piece get_type() const;
-            std::vector<Move> get_legal_moves(const state::State& s) const;
+            std::vector<Move> get_legal_moves(const state::State& s, bool ignore_check = false) const;
     };
 
     class King: public Piece {
@@ -96,7 +96,7 @@ namespace piece {
         public:
             King(Player p, Position pos);
             piecetype::Piece get_type() const;
-            std::vector<Move> get_legal_moves(const state::State& s) const;
+            std::vector<Move> get_legal_moves(const state::State& s, bool ignore_check = false) const;
 
         private:
             /* King moves without accounting for squares under attack. Some of these moves might be illegal. */
