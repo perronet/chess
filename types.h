@@ -82,9 +82,11 @@ struct Move {
     bool is_capture;
     bool is_castle = false;
     bool is_en_passant = false;
+    bool is_promotion = false;
     Position castle_rook_from = {-1, -1};
     Position castle_rook_to = {-1, -1};
     Position en_passant_capture = {-1, -1};
+    piecetype::Piece promotion_typ = piecetype::Empty;
 
     public:
         Move(Position from, Position to, bool is_capture = false) {
@@ -104,8 +106,13 @@ struct Move {
             this->en_passant_capture = capture;
         }
 
+        void set_promotion(piecetype::Piece typ) {
+            this->is_promotion = true;
+            this->promotion_typ = typ;
+        }
+
         bool operator==(const Move& other) const {
-            return this->from == other.from && this->to == other.to;
+            return this->from == other.from && this->to == other.to && this->promotion_typ == other.promotion_typ;
         }
 
         std::string to_string() {

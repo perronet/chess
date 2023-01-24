@@ -152,6 +152,20 @@ bool Pawn::check_capture_en_passant(const state::State& s, Position pos) const {
             ((Pawn*)piece)->two_squares_move == curr_move - 1;
 }
 
+/* Can always promote to anything except pawn and king */
+#define CHECK_PROMOTION(i, j, is_capture) { \
+    int board_end = this->player == White ? 0 : BOARD_SIZE - 1; \
+    if (i == board_end) { \
+        for (int typ = piecetype::Rook; typ != piecetype::King; typ++) { \
+            Move m(from, {i, j}, is_capture); \
+            m.set_promotion((piecetype::Piece)typ); \
+            v.push_back(m); \
+        } \
+    } else { \
+        v.push_back(Move(from, {i, j}, is_capture)); \
+    } \
+} \
+
 vector<Move> Pawn::get_legal_moves(const state::State& s, bool ignore_check) const {
     vector<Move> v;
     const state::Board& board = s.get_board();
@@ -166,51 +180,29 @@ vector<Move> Pawn::get_legal_moves(const state::State& s, bool ignore_check) con
     if (pinner.has_value()) {
         v = this->get_legal_moves_pinned(s, pinner.value());
     } else {
+        int i_to = this->player == White ? i - 1 : i + 1;
+        int i_to_double = this->player == White ? i_to - 1 : i_to + 1;
         
-        if (this->player == White) {
-            // Move
-            if (board(i - 1, j)->is_empty())
-                v.push_back(Move(from, {i - 1, j}));
-            if (this->first_move && board(i - 2, j)->is_empty())
-                v.push_back(Move(from, {i - 2, j}));
+        // Move
+        if (board(i_to, j)->is_empty())
+            CHECK_PROMOTION(i_to, j, false);
+        if (this->first_move && board(i_to_double, j)->is_empty())
+            CHECK_PROMOTION(i_to_double, j, false);
 
-            // Capture
-            if (s.check_capture({i - 1, j - 1}))
-                v.push_back(Move(from, {i - 1, j - 1}, true));
-            if (s.check_capture({i - 1, j + 1}))
-                v.push_back(Move(from, {i - 1, j + 1}, true));
-            if (this->check_capture_en_passant(s, {i, j - 1})) {
-                Move en_passant = Move(from, {i - 1, j - 1}, true);
-                en_passant.set_en_passant({i, j - 1});
-                v.push_back(en_passant);
-            }
-            if (this->check_capture_en_passant(s, {i, j + 1})) {
-                Move en_passant = Move(from, {i - 1, j + 1}, true);
-                en_passant.set_en_passant({i, j + 1});
-                v.push_back(en_passant);
-            }
-        } else if (this->player == Black) {
-            // Move
-            if (board(i + 1,j)->is_empty())
-                v.push_back(Move(from, {i + 1, j}));
-            if (this->first_move && board(i + 2, j)->is_empty())
-                v.push_back(Move(from, {i + 2, j}));
-
-            // Capture
-            if (s.check_capture({i + 1, j - 1}))
-                v.push_back(Move(from, {i + 1, j - 1}, true));
-            if (s.check_capture({i + 1, j + 1}))
-                v.push_back(Move(from, {i + 1, j + 1}, true));
-            if (this->check_capture_en_passant(s, {i, j - 1})) {
-                Move en_passant = Move(from, {i + 1, j - 1}, true);
-                en_passant.set_en_passant({i, j - 1});
-                v.push_back(en_passant);
-            }
-            if (this->check_capture_en_passant(s, {i, j + 1})) {
-                Move en_passant = Move(from, {i + 1, j + 1}, true);
-                en_passant.set_en_passant({i, j + 1});
-                v.push_back(en_passant);
-            }
+        // Capture
+        if (s.check_capture({i_to, j - 1}))
+            CHECK_PROMOTION(i_to, j - 1, true);
+        if (s.check_capture({i_to, j + 1}))
+            CHECK_PROMOTION(i_to, j + 1, true);
+        if (this->check_capture_en_passant(s, {i, j - 1})) {
+            Move en_passant = Move(from, {i_to, j - 1}, true);
+            en_passant.set_en_passant({i, j - 1});
+            v.push_back(en_passant);
+        }
+        if (this->check_capture_en_passant(s, {i, j + 1})) {
+            Move en_passant = Move(from, {i_to, j + 1}, true);
+            en_passant.set_en_passant({i, j + 1});
+            v.push_back(en_passant);
         }
     }
 
@@ -226,31 +218,37 @@ vector<Move> Pawn::get_legal_moves_pinned(const state::State& s, const Piece* pi
     Position from = this->get_pos();
     int i = this->get_pos().i;
     int j = this->get_pos().j;
+    int i_to = this->player == White ? i - 1 : i + 1;
+    int i_to_double = this->player == White ? i_to - 1 : i_to + 1;
 
-    if (this->player == White) {
-        // Move
-        if (this->get_pos().is_orthogonal_to(pinner->get_pos())) {
-            if (board(i - 1, j)->is_empty())
-                v.push_back(Move(from, {i - 1, j}));
-            if (this->first_move && board(i - 2, j)->is_empty())
-                v.push_back(Move(from, {i - 2, j}));
+    // Move: pinner in front/back of the pawn
+    if (this->get_pos().j == pinner->get_pos().j) {
+        if (board(i_to, j)->is_empty())
+            CHECK_PROMOTION(i_to , j, false);
+        if (this->first_move && board(i_to_double, j)->is_empty())
+            CHECK_PROMOTION(i_to_double , j, false);
+    }
+
+    // Capture: pinner has to be right next to this pawn
+    if (pinner->get_pos() == Position{i_to, j - 1} || pinner->get_pos() == Position{i_to, j + 1})
+        CHECK_PROMOTION(pinner->get_pos().i , pinner->get_pos().j, true);
+
+    // Capture en passant: pinner could be far away from this pawn
+    if (from.is_diagonal_to(pinner->get_pos())) {
+        vector<Position> in_between = from.range(pinner->get_pos());
+
+        if (this->check_capture_en_passant(s, {i, j - 1}) &&
+            find(in_between.begin(), in_between.end(), Position{i_to, j - 1}) != in_between.end()) {
+            Move en_passant = Move(from, {i_to, j - 1}, true);
+            en_passant.set_en_passant({i, j - 1});
+            v.push_back(en_passant);
         }
-
-        // Capture
-        if (pinner->get_pos() == Position{i - 1, j - 1} || pinner->get_pos() == Position{i - 1, j + 1})
-            v.push_back(Move(from, pinner->get_pos(), true));
-    } else if (this->player == Black) {
-        // Move
-        if (this->get_pos().is_orthogonal_to(pinner->get_pos())) {
-            if (board(i + 1,j)->is_empty())
-                v.push_back(Move(from, {i + 1, j}));
-            if (this->first_move && board(i + 2, j)->is_empty())
-            v.push_back(Move(from, {i + 2, j}));
+        if (this->check_capture_en_passant(s, {i, j + 1}) &&
+            find(in_between.begin(), in_between.end(), Position{i_to, j + 1}) != in_between.end()) {
+            Move en_passant = Move(from, {i_to, j + 1}, true);
+            en_passant.set_en_passant({i, j + 1});
+            v.push_back(en_passant);
         }
-
-        // Capture
-        if (pinner->get_pos() == Position{i + 1, j - 1} || pinner->get_pos() == Position{i + 1, j + 1})
-            v.push_back(Move(from, pinner->get_pos(), true));
     }
 
     return v;    

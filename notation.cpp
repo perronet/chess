@@ -7,8 +7,7 @@
 using namespace std;
 
 namespace notation {
-    // TODO captures without the x?
-    optional<pair<Position, Position>> parse(string move, const state::State& s) {
+    optional<Move> parse(string move, const state::State& s) {
         piecetype::Piece piece = piecetype::Pawn;
         int i = 0;
         string coord_1;
@@ -19,7 +18,7 @@ namespace notation {
         // Non-pawn piece
         if (isupper(move[i])) {
             piece = char_to_piece(move[i]);
-            ++i;
+            i++;
         }
 
         // Next is a coordinate
@@ -27,12 +26,13 @@ namespace notation {
         i += 2;
 
         // There still could be 'x' and another coordinate
-        if (i < move.length()) {
+        if (i < move.length() && move[i] != '=') {
             if (move[i] == 'x')
-                ++i;
-            if (i != move.length() - 2)
+                i++;
+            if (i >= move.length())
                 return nullopt;
             coord_2 = move.substr(i, 2);
+            i += 2;
         }
 
         if (coord_1.length() == 2 && coord_2.length() == 2) {
@@ -46,8 +46,27 @@ namespace notation {
                 pos_from = disambiguate_piece(piece, pos_to.value(), s);
         }
 
-        if (pos_from.has_value() && pos_to.has_value())
-            return pair(pos_from.value(), pos_to.value());
+        if (pos_from.has_value() && pos_to.has_value()) {
+            Move m = Move(pos_from.value(), pos_to.value());
+            int board_end = s.get_turn() == White ? 0 : BOARD_SIZE - 1;
+
+            // Is it a promotion move? Then the user must provide a promotion type
+            if (pos_to.value().i == board_end && 
+                s.get_board()[pos_from.value()]->get_type() == piecetype::Pawn) {
+
+                if (i != move.length() - 2 || move[i] != '=')
+                    return nullopt;
+                i++;
+                piecetype::Piece typ = char_to_piece(move[i]);
+                if (typ == piecetype::Empty)
+                    return nullopt;
+
+                m.set_promotion(typ);
+            } 
+
+            return m;
+        }
+
         return nullopt;
     }
 
@@ -73,13 +92,6 @@ namespace notation {
                 }
             }
         }
-
-        // switch (piece) {
-        //     case piecetype::Rook:
-        //         break;
-        //     default:
-        //         break; // TODO
-        // }
 
         return pos_from;
     }
@@ -120,8 +132,11 @@ namespace notation {
             case 'K':
                 return piecetype::King;
                 break;
-            default:
+            case 'P':
                 return piecetype::Pawn;
+                break;
+            default:
+                return piecetype::Empty;
                 break;
         }
     }

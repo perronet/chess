@@ -50,7 +50,7 @@ namespace state {
 
         public:
             State();
-            bool move(Position from, Position to);
+            bool move(Move input_move);
             bool move(std::string move_notation);
             bool in_check() const;
             bool in_blockable_check() const;

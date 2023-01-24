@@ -71,15 +71,17 @@ bool State::operator==(const State& other) const {
 }
 
 bool State::move(string move_notation) {
-    optional<pair<Position, Position>> result = notation::parse(move_notation, *this);
+    optional<Move> result = notation::parse(move_notation, *this);
 
     if (!result.has_value())
         return false;
 
-    return this->move(result.value().first, result.value().second);
+    return this->move(result.value());
 }
 
-bool State::move(Position from, Position to) {
+bool State::move(Move input_move) {
+    Position from = input_move.from;
+    Position to = input_move.to;
     if (board[from]->is_empty()
         || board[from]->get_player() != this->turn
         || board[to]->get_player() == this->turn) {
@@ -88,19 +90,25 @@ bool State::move(Position from, Position to) {
 
     vector<Move> moves = board[from]->get_legal_moves(*this);
     for (auto move : moves) {
-        if (move.from == from && move.to == to) {
-            // Is it a castling move? Then move the corresponding rook first
+        if (move == input_move) {
+            // Move the piece
+            this->move_piece(from, to);
+
+            // Is it a castling move? Then move the corresponding rook too
             if (move.is_castle)
                 this->move_piece(move.castle_rook_from, move.castle_rook_to);
 
-            // Is it en passant? Remove the captured pawn before moving
+            // Is it en passant? Then remove the captured pawn
             if (move.is_en_passant) {
                 this->remove_piece(move.en_passant_capture);
                 this->add_empty(move.en_passant_capture);
             }
 
-            // Move the piece
-            this->move_piece(from, to);
+            // Is it a promotion? Then add a new piece on the board
+            if (move.is_promotion) {
+                this->remove_piece(to);
+                this->add_piece(this->turn, move.promotion_typ, to);
+            }
 
             // Update pinned list and checking list (discovery check: Queen, Bishop, Rook)
             this->checking_pieces.clear();
@@ -462,7 +470,7 @@ void State::update_game_state(Move& move) {
         return;
     }
 
-    /*  TODO include dead positions
+    /*  TODO include dead positions. Currently, the 50 moves rule takes care of this.
         King vs. king
         King and bishop vs. king
         King and knight vs. king
