@@ -53,11 +53,13 @@ namespace state {
             State();
             bool move(Move input_move);
             bool move(std::string move_notation);
+
             bool in_check() const;
             bool in_blockable_check() const;
             bool in_double_check() const;
             bool is_square_attacked(Position pos, Player p) const;
             bool game_ended() const;
+
             int get_move_count() const;
             GameState get_game_state() const;
             std::vector<Move> get_legal_moves() const;
@@ -68,6 +70,7 @@ namespace state {
             const piece::King* get_king() const;
             const piece::King* get_opponent_king() const;
             Player get_turn() const;
+            
             bool check_capture(Position pos) const;
             bool operator==(const State& other) const;
             std::string to_string() const;

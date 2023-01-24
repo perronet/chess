@@ -23,12 +23,14 @@ namespace piece {
         public:
             Piece();
             Piece(Player p, Position pos);
+
             virtual std::vector<Move> get_legal_moves(const state::State& s, bool ignore_check = false) const = 0;
             virtual piecetype::Piece get_type() const = 0;
             std::string get_symbol() const;
             Position get_pos() const;
             void set_pos(Position p);
             Player get_player() const;
+
             bool is_first_move() const;
             bool is_empty() const;
             std::optional<const Piece*> check_pinned(const state::State& s) const; // Returns the pinner if the piece is pinned
