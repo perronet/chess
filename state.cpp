@@ -38,7 +38,6 @@ State::State() {
     this->turn = White;
     this->white_pieces.player = White;
     this->black_pieces.player = Black;
-    this->game_state = Ongoing;
     for (int i = 1; i < BOARD_SIZE-1; ++i) {
         for (int j = 0; j < BOARD_SIZE; ++j) {
             if (i == 1) {
@@ -63,7 +62,10 @@ State::State() {
             this->add_piece(player, order[j], {row, j});
     }
 
+    this->game_state = Ongoing;
     this->occurred_state_freq[this->to_string()] = 1;
+    this->curr_legal_moves.reserve(AVG_LEGAL_MOVES);
+    this->compute_legal_moves();
 }
 
 bool State::operator==(const State& other) const {
@@ -88,8 +90,7 @@ bool State::move(Move input_move) {
         return false;
     }
 
-    vector<Move> moves = board[from]->get_legal_moves(*this);
-    for (auto move : moves) {
+    for (auto move : this->curr_legal_moves) {
         if (move == input_move) {
             // Move the piece
             this->move_piece(from, to);
@@ -136,8 +137,10 @@ bool State::move(Move input_move) {
             // Switch player
             this->turn = (Player)!this->get_turn();
 
-            // Update game state (i.e. checkmate, stalemate...)
-            // TODO cache legal moves for next turn
+            // Compute the opponent's legal moves before next turn
+            this->compute_legal_moves();
+
+            // Update game state based on the legal moves (i.e. checkmate, stalemate...)
             this->update_game_state(move);
 
             this->move_cnt++;
@@ -280,20 +283,8 @@ bool State::is_square_attacked(Position pos, Player p) const {
     return false;
 }
 
-std::vector<Move> State::get_legal_moves() const {
-    vector<Move> v, v_temp;
-    v.reserve(AVG_LEGAL_MOVES);
-    const Material& material = this->get_turn() == White ? this->white_pieces : this->black_pieces;
-
-    for (auto piece : material.pieces) {
-        v_temp = piece->get_legal_moves(*this);
-        v.insert(v.end(), v_temp.begin(), v_temp.end());
-    }
-
-    v_temp = material.king->get_legal_moves(*this);
-    v.insert(v.end(), v_temp.begin(), v_temp.end());
-
-    return v;
+vector<Move> State::get_legal_moves() const {
+    return this->curr_legal_moves;
 }
 
 vector<const piece::Piece*> State::get_checking_pieces() const {
@@ -460,9 +451,7 @@ bool State::check_capture(Position pos) const {
 }
 
 void State::update_game_state(Move& move) {
-    vector<Move> legal_moves = this->get_legal_moves(); // TODO We could easily cache the list of legal moves before next turn  
-
-    if (legal_moves.empty()) {
+    if (this->curr_legal_moves.empty()) {
         if (this->in_check())
             this->game_state = GameState::Checkmate;
         else
@@ -496,4 +485,18 @@ void State::update_game_state(Move& move) {
         this->game_state = GameState::Draw_Maxmoves;
     else
         this->game_state = GameState::Ongoing;
+}
+
+void State::compute_legal_moves() {
+    vector<Move> v_temp;
+    const Material& material = this->get_turn() == White ? this->white_pieces : this->black_pieces;
+    this->curr_legal_moves.clear();
+
+    for (auto piece : material.pieces) {
+        v_temp = piece->get_legal_moves(*this);
+        this->curr_legal_moves.insert(this->curr_legal_moves.end(), v_temp.begin(), v_temp.end());
+    }
+
+    v_temp = material.king->get_legal_moves(*this);
+    this->curr_legal_moves.insert(this->curr_legal_moves.end(), v_temp.begin(), v_temp.end());
 }

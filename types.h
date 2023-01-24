@@ -122,6 +122,6 @@ struct Move {
 
 struct MoveHash {
     size_t operator()(const Move& move) const {
-        return move.from.i ^ move.from.j ^ move.to.i ^ move.to.j;
+        return move.from.i ^ move.from.j ^ move.to.i ^ move.to.j ^ move.promotion_typ;
     }
 };

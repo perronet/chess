@@ -36,6 +36,7 @@ namespace state {
         friend class piece::King;
 
         Board board;
+        std::vector<Move> curr_legal_moves;
         std::vector<std::pair<const piece::Piece*, const piece::Piece*>> pinned_pieces; // (pinner, pinned)
         std::vector<const piece::Piece*> checking_pieces;
         Material white_pieces;
@@ -79,5 +80,6 @@ namespace state {
             void move_piece(Position from, Position to);
             void update_pins_and_checks();
             void update_game_state(Move& move);
+            void compute_legal_moves();
     };
 }
