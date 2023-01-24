@@ -476,7 +476,7 @@ vector<Move> King::get_legal_moves(const state::State& s, bool ignore_check) con
     state_temp.board[pos] = king_ptr;
 
     /* Castle */
-    if (this->first_move && !s.in_check()) {
+    if (this->is_first_move() && !s.in_check()) {
         /* Queen rook, King rook */
         for (Position rook_pos : {Position{i, j-4}, Position{i, j+3}}) {
             if (rook_pos.check_bounds()) {
@@ -485,13 +485,20 @@ vector<Move> King::get_legal_moves(const state::State& s, bool ignore_check) con
                     rook->get_player() == curr_player && 
                     rook->get_type() == piecetype::Rook) {
 
+                    /* All squares in between must be empty */
+                    vector<Position> v_check = this->get_pos().range(rook_pos);
+                    if (!all_of(v_check.begin(), v_check.end(), [&](Position p) {
+                        return s.get_board()[p]->is_empty();
+                    }))
+                        continue;
+
                     /* "Is it the queen rook?" */
                     Position new_king_pos = rook_pos.j < j ? Position{i, j-2} : Position{i, j+2};
                     Position new_king_pos_bound = rook_pos.j < j ? Position{i, j-3} : Position{i, j+3};
                     Position new_rook_pos = rook_pos.j < j ? Position{i, j-1} : Position{i, j+1};
 
                     /* All squares the King passes through must not be under attack */
-                    vector<Position> v_check = this->get_pos().range(new_king_pos_bound);
+                    v_check = this->get_pos().range(new_king_pos_bound);
                     if (all_of(v_check.begin(), v_check.end(), [&](Position p) {
                         return !s.is_square_attacked(p, curr_player);
                     })) {
