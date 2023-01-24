@@ -42,6 +42,7 @@ namespace state {
         Material black_pieces;
         Player turn;
         GameState game_state;
+        int move_cnt = 0;
 
         // Data to compute draws
         std::unordered_map<std::string, int> occurred_state_freq;
@@ -56,6 +57,7 @@ namespace state {
             bool in_double_check() const;
             bool is_square_attacked(Position pos, Player p) const;
             bool game_ended() const;
+            int get_move_count() const;
             GameState get_game_state() const;
             std::vector<Move> get_legal_moves() const;
             std::vector<std::pair<const piece::Piece*, const piece::Piece*>> get_pinned_pieces() const;

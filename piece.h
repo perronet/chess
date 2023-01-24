@@ -49,10 +49,15 @@ namespace piece {
     };
 
     class Pawn: public Piece {
+        // Move on which the pawn advanced two squares: needed for en passant
+        int two_squares_move = 0;
+
         public:
             Pawn(Player p, Position pos);
             piecetype::Piece get_type() const;
             std::vector<Move> get_legal_moves(const state::State& s) const;
+            void set_two_squares_move(int move_num);
+            bool check_capture_en_passant(const state::State& s, Position pos) const;
         protected:
             std::vector<Move> get_legal_moves_pinned(const state::State& s, const Piece* pinner) const override;
     };

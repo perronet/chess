@@ -6,8 +6,8 @@
 
 #define BOARD_SIZE 8
 #define AVG_LEGAL_MOVES 35
-#define MAX_MOVES_DRAW 50
-#define REPETION_MOVES_DRAW 3
+#define MAX_MOVES_DRAW 100
+#define REPEATED_STATES_DRAW 3
 
 enum Player {White, Black, None};
 
@@ -81,8 +81,10 @@ struct Move {
     Position to;
     bool is_capture;
     bool is_castle = false;
+    bool is_en_passant = false;
     Position castle_rook_from = {-1, -1};
     Position castle_rook_to = {-1, -1};
+    Position en_passant_capture = {-1, -1};
 
     public:
         Move(Position from, Position to, bool is_capture = false) {
@@ -91,10 +93,15 @@ struct Move {
             this->is_capture = is_capture;
         }
         
-        void add_castle(Position rook_from, Position rook_to) {
+        void set_castle(Position rook_from, Position rook_to) {
             this->castle_rook_from = rook_from;
             this->castle_rook_to = rook_to;
             this->is_castle = true;
+        }
+
+        void set_en_passant(Position capture) {
+            this->is_en_passant = true;
+            this->en_passant_capture = capture;
         }
 
         bool operator==(const Move& other) const {

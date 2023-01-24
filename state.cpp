@@ -93,6 +93,12 @@ bool State::move(Position from, Position to) {
             if (move.is_castle)
                 this->move_piece(move.castle_rook_from, move.castle_rook_to);
 
+            // Is it en passant? Remove the captured pawn before moving
+            if (move.is_en_passant) {
+                this->remove_piece(move.en_passant_capture);
+                this->add_empty(move.en_passant_capture);
+            }
+
             // Move the piece
             this->move_piece(from, to);
 
@@ -112,6 +118,10 @@ bool State::move(Position from, Position to) {
                 }
             }
 
+            // Was it a two squares pawn move? Then save the move number (Needed for en passant)
+            if (moved_piece->get_type() == piecetype::Pawn && from.range(to).size() == 1)
+                ((Pawn*)moved_piece)->set_two_squares_move(this->move_cnt);
+
             // King under check after moving = there is a bug
             assert(!is_square_attacked(this->get_king()->get_pos(), this->get_turn()));
 
@@ -122,6 +132,7 @@ bool State::move(Position from, Position to) {
             // TODO cache legal moves for next turn
             this->update_game_state(move);
 
+            this->move_cnt++;
             return true;
         }
     }
@@ -213,6 +224,10 @@ bool State::in_double_check() const {
 
 bool State::game_ended() const {
     return this->game_state != GameState::Ongoing;
+}
+
+int State::get_move_count() const {
+    return this->move_cnt;
 }
 
 GameState State::get_game_state() const {
@@ -467,7 +482,7 @@ void State::update_game_state(Move& move) {
         this->draw_moves_cnt++;
 
     // Position has occurred too many times: draw
-    if (this->occurred_state_freq[curr_state] >= REPETION_MOVES_DRAW)
+    if (this->occurred_state_freq[curr_state] >= REPEATED_STATES_DRAW)
         this->game_state = GameState::Draw_Repetition;
     else if (draw_moves_cnt >= MAX_MOVES_DRAW)
         this->game_state = GameState::Draw_Maxmoves;

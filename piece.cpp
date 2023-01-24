@@ -138,6 +138,18 @@ piecetype::Piece Pawn::get_type() const {
     return piecetype::Pawn;
 }
 
+void Pawn::set_two_squares_move(int move_num) {
+    this->two_squares_move = move_num;
+}
+
+/* En passant is legal only on the very next move. */
+bool Pawn::check_capture_en_passant(const state::State& s, Position pos) const {
+    Piece* piece = s.get_board()[pos];
+    int curr_move = s.get_move_count();
+    return s.check_capture(pos) && piece->get_type() == piecetype::Pawn &&
+            ((Pawn*)piece)->two_squares_move == curr_move - 1;
+}
+
 vector<Move> Pawn::get_legal_moves(const state::State& s) const {
     vector<Move> v;
     const state::Board& board = s.get_board();
@@ -152,6 +164,7 @@ vector<Move> Pawn::get_legal_moves(const state::State& s) const {
     if (pinner.has_value()) {
         v = this->get_legal_moves_pinned(s, pinner.value());
     } else {
+        
         if (this->player == White) {
             // Move
             if (board(i - 1, j)->is_empty())
@@ -164,6 +177,16 @@ vector<Move> Pawn::get_legal_moves(const state::State& s) const {
                 v.push_back(Move(from, {i - 1, j - 1}, true));
             if (s.check_capture({i - 1, j + 1}))
                 v.push_back(Move(from, {i - 1, j + 1}, true));
+            if (this->check_capture_en_passant(s, {i, j - 1})) {
+                Move en_passant = Move(from, {i - 1, j - 1}, true);
+                en_passant.set_en_passant({i, j - 1});
+                v.push_back(en_passant);
+            }
+            if (this->check_capture_en_passant(s, {i, j + 1})) {
+                Move en_passant = Move(from, {i - 1, j + 1}, true);
+                en_passant.set_en_passant({i, j + 1});
+                v.push_back(en_passant);
+            }
         } else if (this->player == Black) {
             // Move
             if (board(i + 1,j)->is_empty())
@@ -176,6 +199,16 @@ vector<Move> Pawn::get_legal_moves(const state::State& s) const {
                 v.push_back(Move(from, {i + 1, j - 1}, true));
             if (s.check_capture({i + 1, j + 1}))
                 v.push_back(Move(from, {i + 1, j + 1}, true));
+            if (this->check_capture_en_passant(s, {i, j - 1})) {
+                Move en_passant = Move(from, {i + 1, j - 1}, true);
+                en_passant.set_en_passant({i, j - 1});
+                v.push_back(en_passant);
+            }
+            if (this->check_capture_en_passant(s, {i, j + 1})) {
+                Move en_passant = Move(from, {i + 1, j + 1}, true);
+                en_passant.set_en_passant({i, j + 1});
+                v.push_back(en_passant);
+            }
         }
     }
 
@@ -458,7 +491,7 @@ vector<Move> King::get_legal_moves(const state::State& s) const {
                         return !s.is_square_attacked(p, curr_player);
                     })) {
                         Move move(from, new_king_pos);
-                        move.add_castle(rook_pos, new_rook_pos);
+                        move.set_castle(rook_pos, new_rook_pos);
                         v.push_back(move);
                     }
                 }
