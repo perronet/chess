@@ -84,12 +84,31 @@ bool State::move(string move_notation) {
 bool State::move(Move input_move) {
     Position from = input_move.from;
     Position to = input_move.to;
+
+    /* Draw offer and resign are always legal */
+    if (input_move.is_resign) {
+        this->game_state = GameState::Resigned;
+        return true;
+    }
+    if (input_move.is_draw_offer) {
+        if (this->draw_offered) {
+            this->game_state = GameState::Draw_Agreed;
+            return true;
+        }
+        
+        this->draw_offered = true;
+        this->turn = (Player)!this->get_turn();
+        this->compute_legal_moves();
+        return true;
+    }
+
     if (board[from]->is_empty()
         || board[from]->get_player() != this->turn
         || board[to]->get_player() == this->turn) {
         return false;
     }
 
+    /* Check if the move is legal */
     for (auto move : this->curr_legal_moves) {
         if (move == input_move) {
             // Move the piece
@@ -143,6 +162,7 @@ bool State::move(Move input_move) {
             // Update game state based on the legal moves (i.e. checkmate, stalemate...)
             this->update_game_state(move);
 
+            this->draw_offered = false;
             this->move_cnt++;
             return true;
         }

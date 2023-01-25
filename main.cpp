@@ -41,6 +41,9 @@ int main() {
         case GameState::Stalemate:
             cout << "Stalemate." << endl;
             break;
+        case GameState::Resigned:
+            cout << "Resign!" << endl;
+            break;
         case GameState::Draw_Deadpos:
             cout << "Draw by dead position." << endl;
             break;
@@ -50,8 +53,11 @@ int main() {
         case GameState::Draw_Maxmoves:
             cout << "Draw by the fifty-moves rule." << endl;
             break;
+        case GameState::Draw_Agreed:
+            cout << "Players agreed to a draw." << endl;
+            break;
     }
 
-    if (game_state == GameState::Checkmate)
+    if (game_state == GameState::Checkmate || game_state == GameState::Resigned)
         cout << (s.get_turn() == Black ? "White" : "Black") << " wins." << endl;
 }

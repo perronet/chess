@@ -49,6 +49,7 @@ namespace state {
         /* Data to compute draws */
         std::unordered_map<std::string, int> occurred_state_freq;
         int draw_moves_cnt = 0;
+        bool draw_offered = false;
 
         public:
             State();

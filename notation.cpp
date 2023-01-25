@@ -16,6 +16,18 @@ namespace notation {
         int i = 0;
         bool capture_found = false;
 
+        // Check special moves first
+        if (move == "resign") {
+            Move m;
+            m.is_resign = true;
+            return m;
+        }
+        if (move == "draw") {
+            Move m;
+            m.is_draw_offer = true;
+            return m;
+        }
+
         // Non-pawn piece: record piece type
         if (i < move.length() && isupper(move[i])) {
             piece = char_to_piece(move[i]);

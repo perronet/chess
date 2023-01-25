@@ -14,7 +14,8 @@ enum Player {White, Black, None};
 enum GameState {
     Ongoing,
     Checkmate, Stalemate, 
-    Draw_Maxmoves, Draw_Repetition, Draw_Deadpos,
+    Draw_Maxmoves, Draw_Repetition, Draw_Deadpos, Draw_Agreed,
+    Resigned
 };
 
 namespace piecetype { // Avoid name clash with class
@@ -77,9 +78,10 @@ struct Position {
 };
 
 struct Move {
-    Position from;
-    Position to;
-    bool is_capture;
+    Position from = {-1, -1};
+    Position to = {-1, -1};
+
+    bool is_capture = false;
     bool is_castle = false;
     bool is_en_passant = false;
     bool is_promotion = false;
@@ -88,7 +90,13 @@ struct Move {
     Position en_passant_capture = {-1, -1};
     piecetype::Piece promotion_typ = piecetype::Empty;
 
+    /* Special moves */
+    bool is_draw_offer = false;
+    bool is_resign = false;
+
     public:
+        Move() {}
+
         Move(Position from, Position to, bool is_capture = false) {
             this->from = from;
             this->to = to;
