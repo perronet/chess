@@ -39,13 +39,14 @@ namespace state {
         std::vector<Move> curr_legal_moves;
         std::vector<std::pair<const piece::Piece*, const piece::Piece*>> pinned_pieces; // (pinner, pinned)
         std::vector<const piece::Piece*> checking_pieces;
+
         Material white_pieces;
         Material black_pieces;
         Player turn;
         GameState game_state;
         int move_cnt = 0;
 
-        // Data to compute draws
+        /* Data to compute draws */
         std::unordered_map<std::string, int> occurred_state_freq;
         int draw_moves_cnt = 0;
 
@@ -54,12 +55,15 @@ namespace state {
             bool move(Move input_move);
             bool move(std::string move_notation);
 
+            /* Checks */
             bool in_check() const;
             bool in_blockable_check() const;
             bool in_double_check() const;
             bool is_square_attacked(Position pos, Player p) const;
             bool game_ended() const;
+            bool check_capture(Position pos) const;
 
+            /* Getters */
             int get_move_count() const;
             GameState get_game_state() const;
             std::vector<Move> get_legal_moves() const;
@@ -72,7 +76,7 @@ namespace state {
             const piece::King* get_opponent_king() const;
             Player get_turn() const;
 
-            bool check_capture(Position pos) const;
+            /* Utility */
             bool operator==(const State& other) const;
             std::string to_string() const;
             void print() const;

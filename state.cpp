@@ -237,6 +237,12 @@ bool State::game_ended() const {
     return this->game_state != GameState::Ongoing;
 }
 
+/* King capture is considered legal in order to detect checks */
+bool State::check_capture(Position pos) const {
+    return pos.check_bounds() &&
+    board[pos]->get_player() == !this->get_turn();
+}
+
 int State::get_move_count() const {
     return this->move_cnt;
 }
@@ -449,12 +455,6 @@ void State::move_piece(Position from, Position to) {
     board[from]->set_pos(to);
     board[to] = board[from];
     this->add_empty(from);
-}
-
-/* King capture is considered legal in order to detect checks */
-bool State::check_capture(Position pos) const {
-    return pos.check_bounds() &&
-    board[pos]->get_player() == !this->get_turn();
 }
 
 void State::update_game_state(Move& move) {
