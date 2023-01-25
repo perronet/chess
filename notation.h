@@ -2,6 +2,7 @@
 
 #include <string>
 #include <optional>
+#include <unordered_set>
 #include "types.h"
 
 namespace state {

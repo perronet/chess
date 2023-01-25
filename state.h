@@ -67,10 +67,11 @@ namespace state {
             std::vector<const piece::Piece*> get_checking_pieces() const;
             const Board& get_board() const;
             const Material& get_pieces(Player p) const;
+            const std::vector<const piece::Piece*> get_pieces(Player p, piecetype::Piece typ) const;
             const piece::King* get_king() const;
             const piece::King* get_opponent_king() const;
             Player get_turn() const;
-            
+
             bool check_capture(Position pos) const;
             bool operator==(const State& other) const;
             std::string to_string() const;

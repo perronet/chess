@@ -9,46 +9,66 @@ using namespace std;
 namespace notation {
     optional<Move> parse(string move, const state::State& s) {
         piecetype::Piece piece = piecetype::Pawn;
-        int i = 0;
         string coord_1;
         string coord_2;
         optional<Position> pos_from = nullopt;
         optional<Position> pos_to = nullopt;
+        int i = 0;
+        bool capture_found = false;
 
-        // Non-pawn piece
-        if (isupper(move[i])) {
+        // Non-pawn piece: record piece type
+        if (i < move.length() && isupper(move[i])) {
             piece = char_to_piece(move[i]);
             i++;
         }
 
-        // Next is a coordinate
-        coord_1 = move.substr(i, 2);
-        i += 2;
+        // Ignore 'x' for capture (e.g. Qxd5)
+        if (i < move.length() && move[i] == 'x') {
+            capture_found = true;
+            i++;
+        }
 
-        // There still could be 'x' and another coordinate
+        // Next is a coordinate
+        if (i < move.length()) {
+            coord_1 = move.substr(i, 2);
+            i += 2;
+        }
+
+        // There still could be 'x' and another coordinate (e.g. Qe6xd5)
+        // If there is '=', then coordinates ended. Parse the promotion later (e.g. h8=Q)
         if (i < move.length() && move[i] != '=') {
-            if (move[i] == 'x')
+            if (move[i] == 'x') {
+                if (capture_found)
+                    return nullopt;
                 i++;
+            }
+
             if (i >= move.length())
                 return nullopt;
+            
             coord_2 = move.substr(i, 2);
             i += 2;
         }
 
         if (coord_1.length() == 2 && coord_2.length() == 2) {
-            // coord_1 = from, coord_2 = to
+            // coord_1 = "from", coord_2 = "to"
             pos_from = coord_to_pos(coord_1);
             pos_to = coord_to_pos(coord_2);
-        } else if (coord_1.length() == 2) {
-            // coord_1 = to, must disambiguate from
+        } else if (coord_1.length() == 2 && coord_2.length() == 0) {
+            // coord_1 = "to", must disambiguate "from"
             pos_to = coord_to_pos(coord_1);
             if (pos_to != nullopt)
                 pos_from = disambiguate_piece(piece, pos_to.value(), s);
         }
 
+        /* Parsing successful. But the move could still be invalid based on the state of the board. */
         if (pos_from.has_value() && pos_to.has_value()) {
             Move m = Move(pos_from.value(), pos_to.value());
             int board_end = s.get_turn() == White ? 0 : BOARD_SIZE - 1;
+
+            // Is the specified piece type actually there?
+            if (s.get_board()[m.from]->get_type() != piece)
+                return nullopt;
 
             // Is it a promotion move? Then the user must provide a promotion type
             if (pos_to.value().i == board_end && 
@@ -60,9 +80,14 @@ namespace notation {
                 piecetype::Piece typ = char_to_piece(move[i]);
                 if (typ == piecetype::Empty)
                     return nullopt;
+                i++;
 
                 m.set_promotion(typ);
-            } 
+            }
+
+            // There should be no chars left to parse
+            if (i != move.length())
+                return nullopt;
 
             return m;
         }
@@ -70,26 +95,32 @@ namespace notation {
         return nullopt;
     }
 
-    optional<Position> disambiguate_piece(piecetype::Piece piece, Position pos_to, const state::State& s) {
+    optional<Position> disambiguate_piece(piecetype::Piece typ, Position pos_to, const state::State& s) {
         optional<Position> pos_from = nullopt;
+        auto pieces = s.get_pieces(s.get_turn(), typ);
 
-        // TODO does this work for capturing?
-        if (piece == piecetype::Pawn) {
-            // Search backwards for the first pawn in the column, starting from pos_to
-            if (s.get_turn() == White) {
-                for (int row = pos_to.i; row < BOARD_SIZE; ++row) {
-                    if (s.get_board()(row, pos_to.j)->get_type() == piecetype::Pawn) {
-                        pos_from = Position{row, pos_to.j};
-                        break;
-                    }
-                }
-            } else {
-                for (int row = pos_to.i; row >= 0; --row) {
-                    if (s.get_board()(row, pos_to.j)->get_type() == piecetype::Pawn) {
-                        pos_from = Position{row, pos_to.j};
-                        break;
-                    }
-                }
+        if (pieces.size() == 0)
+            return nullopt;
+
+        /* Only one possibiliy */
+        if (pieces.size() == 1)
+            return pieces[0]->get_pos();
+
+        /* Check if only one piece can move to the square "pos_to" */
+        for (auto piece : pieces) {
+            vector<Move> legal_moves = piece->get_legal_moves(s);
+
+            auto it = find_if(legal_moves.begin(), legal_moves.end(),
+            [pos_to](Move m){
+                return m.to == pos_to;
+            });
+
+            /* Move found */
+            if (it != legal_moves.end()) {
+                /* Another move was already found: can't disambiguate */
+                if (pos_from.has_value())
+                    return nullopt;
+                pos_from = it->from;
             }
         }
 

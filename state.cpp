@@ -300,24 +300,31 @@ const state::Board& State::get_board() const {
 }
 
 const Material& State::get_pieces(Player p) const {
-    if (p == White)
-        return this->white_pieces;
-    else
-        return this->black_pieces;
+    return p == White ? this->white_pieces : this->black_pieces;
+}
+
+const vector<const Piece*> State::get_pieces(Player p, piecetype::Piece typ) const {
+    const Material& material = this->get_pieces(p);
+    vector<const Piece*> v;
+
+    if (typ == piecetype::King) {
+        v.push_back(material.king);
+    } else {
+        for (auto piece : material.pieces) {
+            if (piece->get_type() == typ && piece->get_player() == p)
+                v.push_back(piece);
+        }
+    }
+
+    return v;
 }
 
 const King* State::get_king() const {
-    if (this->get_turn() == White)
-        return this->white_pieces.king;
-    else
-        return this->black_pieces.king;
+    return this->get_turn() == White ? this->white_pieces.king : this->black_pieces.king;
 }
 
 const King* State::get_opponent_king() const {
-    if (this->get_turn() == White)
-        return this->black_pieces.king;
-    else
-        return this->white_pieces.king;
+    return this->get_turn() == Black ? this->white_pieces.king : this->black_pieces.king;
 }
 
 Player State::get_turn() const {
