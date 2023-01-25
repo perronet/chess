@@ -1,4 +1,4 @@
 default:
 	mkdir -p bin
-	g++ *.cpp -o bin/chess.out
+	g++ *.cpp -std=c++17 -o bin/chess.out
 	./bin/chess.out
