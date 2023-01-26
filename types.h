@@ -130,6 +130,10 @@ struct Move {
 
 struct MoveHash {
     size_t operator()(const Move& move) const {
-        return move.from.i ^ move.from.j ^ move.to.i ^ move.to.j ^ move.promotion_typ;
+        return (move.from.i << 1) ^ 
+                (move.from.j >> 1) ^ 
+                (move.to.i << 1) ^ 
+                (move.to.j >> 1) ^ 
+                (move.promotion_typ);
     }
 };
