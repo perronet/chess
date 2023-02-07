@@ -1,4 +1,10 @@
+GAME_DIR = game
+BIN_DIR = bin
+
 default:
-	mkdir -p bin
-	g++ *.cpp -std=c++17 -o bin/chess.out
-	./bin/chess.out
+	mkdir -p $(BIN_DIR)
+	g++ $(GAME_DIR)/*.cpp -std=c++17 -o $(BIN_DIR)/chess.out
+	./$(BIN_DIR)/chess.out
+
+clean:
+	rm -rf $(BIN_DIR)
