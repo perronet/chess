@@ -1,29 +1,31 @@
 import numpy as np
 from scipy.special import expit
 import setup
-import codecs
 
-def piece_char_to_bits(ch=''):
+def piece_char_to_num(ch=''):
     if not ch:
-        return 6
-    bits = 0
+        return 0
+    
+    num = 0
+    is_black = False
     if ch.islower():
-        bits |= 1 << 3
+        is_black = True
+    
     ch = ch.upper()
     if ch == 'P':
-        bits += 0
+        num = 1
     elif ch == 'R':
-        bits += 1
+        num = 2
     elif ch == 'N':
-        bits += 2
+        num = 3
     elif ch == 'B':
-        bits += 3
+        num = 4
     elif ch == 'Q':
-        bits += 4
+        num = 5
     elif ch == 'K':
-        bits += 5
+        num = 6
 
-    return bits
+    return -num if is_black else num
 
 def fen_to_vector(fen_str):
     training_example = np.zeros(setup.N_FEATURES)
@@ -36,10 +38,10 @@ def fen_to_vector(fen_str):
             if ch.isdigit():
                 # Empty squares
                 for _ in range(int(ch)):
-                    training_example[curr_idx] = piece_char_to_bits()
+                    training_example[curr_idx] = piece_char_to_num()
                     curr_idx += 1
             else:
-                training_example[curr_idx] = piece_char_to_bits(ch)
+                training_example[curr_idx] = piece_char_to_num(ch)
                 curr_idx += 1
 
     # Side to move
@@ -59,16 +61,6 @@ def fen_to_vector(fen_str):
             training_example[curr_idx+3] = 1
     curr_idx += 4
 
-    # En passant
-    if fields[3] != '-':
-        if fields[3][1] == '3':
-            square_id = 0
-        elif fields[3][1] == '6':
-            square_id = 8
-        
-        square_id += ord(fields[3][0]) - 96
-        training_example[curr_idx] = square_id
-
     return training_example
 
 # Returns a value between -1 and 1 using a sigmoid function
@@ -78,6 +70,6 @@ def normalize_stockfish_eval(score):
 
     # Guaranteed checkmate
     if score[0] == "#":
-        return 1 if int(score[1:]) >= 0 else -1
+        return 1 if int(score[1:]) >= 0 else 0
 
-    return expit(int(score)) - 0.5
+    return expit(int(score))
