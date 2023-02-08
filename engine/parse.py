@@ -2,64 +2,56 @@ import numpy as np
 from scipy.special import expit
 import setup
 
-def piece_char_to_num(ch=''):
+'''
+bitmap order: P R N B Q K p r n b q k
+each bit is 1 if it belongs to the side moving, 0 if not present, and -1 for the opponent
+'''
+def piece_char_to_bitmap(white_to_move, ch=''):
+    bitmap = np.zeros(12)
     if not ch:
-        return 0
+        return bitmap
     
-    num = 0
-    is_black = False
-    if ch.islower():
-        is_black = True
+    is_white_piece = False
+    if ch.isupper():
+        is_white_piece = True
+    offset = 0 if is_white_piece else 6
+    value = 1 if white_to_move == is_white_piece else -1
     
     ch = ch.upper()
     if ch == 'P':
-        num = 1
+        bitmap[offset+0] = value
     elif ch == 'R':
-        num = 2
+        bitmap[offset+1] = value
     elif ch == 'N':
-        num = 3
+        bitmap[offset+2] = value
     elif ch == 'B':
-        num = 4
+        bitmap[offset+3] = value
     elif ch == 'Q':
-        num = 5
+        bitmap[offset+4] = value
     elif ch == 'K':
-        num = 6
+        bitmap[offset+5] = value
 
-    return -num if is_black else num
+    return bitmap
 
 def fen_to_vector(fen_str):
     training_example = np.zeros(setup.N_FEATURES)
     fields = fen_str.split()
     curr_idx = 0
+    white_to_move = True if fields[1] == 'w' else False
 
-    # Pieces
+    # Piecesbitmap
     for row in fields[0].split("/"):
         for ch in row:
             if ch.isdigit():
                 # Empty squares
                 for _ in range(int(ch)):
-                    training_example[curr_idx] = piece_char_to_num()
-                    curr_idx += 1
+                    for bit in piece_char_to_bitmap(white_to_move):
+                        training_example[curr_idx] = bit
+                        curr_idx += 1
             else:
-                training_example[curr_idx] = piece_char_to_num(ch)
-                curr_idx += 1
-
-    # Side to move
-    if fields[1] == 'b':
-        training_example[curr_idx] = 1
-    curr_idx += 1
-
-    # Castling
-    for ch in fields[2]:
-        if ch == 'K':
-            training_example[curr_idx] = 1
-        elif ch == 'Q':
-            training_example[curr_idx+1] = 1
-        elif ch == 'k':
-            training_example[curr_idx+2] = 1
-        elif ch == 'q':
-            training_example[curr_idx+3] = 1
-    curr_idx += 4
+                for bit in piece_char_to_bitmap(white_to_move, ch):
+                    training_example[curr_idx] = bit
+                    curr_idx += 1
 
     return training_example
 
