@@ -9,6 +9,10 @@ Pieces are defined as a hierarchy of classes in `piece.h`. Each piece overrides 
 
 ## Quick start
 
+Install the required packages:
+
+`pip3 install -r requirements.txt`
+
 Simply run `make` to compile and run.
 
 ## Algebraic notation
