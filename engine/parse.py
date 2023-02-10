@@ -39,7 +39,7 @@ def fen_to_vector(fen_str):
     curr_idx = 0
     white_to_move = True if fields[1] == 'w' else False
 
-    # Piecesbitmap
+    # Pieces bitmap
     for row in fields[0].split("/"):
         for ch in row:
             if ch.isdigit():
@@ -55,13 +55,25 @@ def fen_to_vector(fen_str):
 
     return training_example
 
-# Returns a value between -1 and 1 using a sigmoid function
-def normalize_stockfish_eval(score):
-    if not score:
+# Convert evaluation based on moving side (positive = winning for moving side)
+def convert_stockfish_eval(fen_str, score_str):
+    if not score_str:
         return 0
 
     # Guaranteed checkmate
-    if score[0] == "#":
-        return 1 if int(score[1:]) >= 0 else 0
+    if score_str[0] == "#":
+        score = 50 if int(score_str[1:]) >= 0 else -50
+    else:
+        score = int(score_str)
 
-    return expit(int(score))
+    black_to_move = True if fen_str.split()[1] == 'b' else False
+    if black_to_move:
+        score = -score
+
+    # Ignore big score values (expit does not cap to 0 or 1 perfectly)
+    if score >= 50:
+        return 1
+    if score <= -50:
+        return 0
+
+    return expit(score)
