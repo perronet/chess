@@ -62,7 +62,7 @@ def convert_stockfish_eval(fen_str, score_str):
 
     # Guaranteed checkmate
     if score_str[0] == "#":
-        score = 50 if int(score_str[1:]) >= 0 else -50
+        score = setup.CENTIPAWN_MAX if int(score_str[1:]) >= 0 else setup.CENTIPAWN_MIN
     else:
         score = int(score_str)
 
@@ -70,10 +70,9 @@ def convert_stockfish_eval(fen_str, score_str):
     if black_to_move:
         score = -score
 
-    # Ignore big score values (expit does not cap to 0 or 1 perfectly)
-    if score >= 50:
+    if score >= setup.CENTIPAWN_MAX:
         return 1
-    if score <= -50:
+    if score <= setup.CENTIPAWN_MIN:
         return 0
 
-    return expit(score)
+    return (score - setup.CENTIPAWN_MIN)/(setup.CENTIPAWN_MAX - setup.CENTIPAWN_MIN)
